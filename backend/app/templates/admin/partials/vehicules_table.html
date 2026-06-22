@@ -1,0 +1,44 @@
+<div class="tableau-historique-conteneur">
+    <p class="compteur-resultats">{{ vehicules|length }} {{ t.vehicules_count }}</p>
+    <table class="tableau-historique tableau-admin-bleu">
+        <thead>
+            <tr>
+                <th>{{ t.photo_vehicule }}</th>
+                <th>{{ t.matricule }}</th>
+                <th>{{ t.modele }}</th>
+                <th>{{ t.actions }}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for v in vehicules %}
+            <tr>
+                <td data-label="{{ t.photo_vehicule }}">
+                    <img src="{{ v.photo_url_affiche }}" alt="{{ v.modele_affiche }}" class="admin-photo-mini">
+                </td>
+                <td data-label="{{ t.matricule }}">{{ v.matricule }}</td>
+                <td data-label="{{ t.modele }}">{{ v.modele_affiche }}</td>
+                <td class="cellule-actions" data-label="{{ t.actions }}">
+                    <div class="cellule-actions-ligne">
+                        <a href="/admin/vehicules/{{ v.id }}/modifier" class="btn btn-secondaire btn-petit">
+                            {{ t.modifier }}
+                        </a>
+                        <a href="/vehicules/{{ v.id }}/historique" class="btn btn-secondaire btn-petit">
+                            {{ t.historique }}
+                        </a>
+                    </div>
+                    <div class="cellule-actions-ligne">
+                        <form method="post" action="/admin/vehicules/{{ v.id }}/supprimer" class="form-inline"
+                              onsubmit="return confirm('{{ t.confirmer_suppression_vehicule }}');">
+                            <button type="submit" class="btn btn-danger btn-petit">{{ t.supprimer }}</button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="4" class="cellule-vide">{{ t.aucun_resultat }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

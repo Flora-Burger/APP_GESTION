@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0f3d7a">
+    <title>{{ t.connexion }} - {{ nom_entreprise }}</title>
+    <link rel="stylesheet" href="/static/css/style.css?v=67">
+    <link rel="stylesheet" href="/static/css/mobile.css?v=11">
+</head>
+<body class="page-login">
+    <main class="login-conteneur">
+        <div class="login-carte">
+            <img src="{{ logo_url }}" alt="{{ nom_entreprise }}" class="login-logo">
+            <h1>{{ nom_entreprise }}</h1>
+            <p class="login-sous-titre">{{ t.connexion }}</p>
+
+            {% if erreur %}
+            <div class="message message-erreur">{{ t[erreur] }}</div>
+            {% endif %}
+
+            <form method="post" action="/login" class="login-formulaire">
+                <div class="champ-form">
+                    <label for="email">{{ t.email }}</label>
+                    <input type="text" id="email" name="email" required autocomplete="username"
+                           inputmode="numeric" pattern="[0-9]{3}" minlength="3" maxlength="3"
+                           title="{{ t['identifiant_format'] }}">
+                </div>
+                <div class="champ-form">
+                    <label for="mot_de_passe">{{ t.mot_de_passe }}</label>
+                    <input type="password" id="mot_de_passe" name="mot_de_passe" required autocomplete="current-password">
+                </div>
+                <button type="submit" class="btn btn-primaire btn-large">{{ t.se_connecter }}</button>
+            </form>
+        </div>
+    </main>
+</body>
+</html>

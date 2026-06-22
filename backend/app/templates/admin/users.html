@@ -1,0 +1,231 @@
+{% extends "base.html" %}
+
+{% block titre %}{{ t.admin_utilisateurs }}{% endblock %}
+{% block body_class %}page-admin-utilisateurs{% endblock %}
+
+{% block contenu %}
+<p class="lien-retour">
+    {% include "partials/lien_retour_accueil.html" %}
+</p>
+
+<h1 class="titre-page">{{ t.admin_utilisateurs }}</h1>
+
+<div class="admin-utilisateurs-actions">
+    <button type="button" class="btn btn-primaire" onclick="ouvrirModalCreerCompte()">
+        {{ t.creer_compte }}
+    </button>
+</div>
+
+{% if message %}
+<div class="message message-succes">{{ t[message] }}</div>
+{% endif %}
+{% if erreur %}
+<div class="message message-erreur">{{ t[erreur] }}</div>
+{% endif %}
+
+<section class="admin-section">
+    <h3>{{ t.liste_comptes }}</h3>
+    <div class="tableau-historique-conteneur">
+        <table class="tableau-historique tableau-admin-bleu">
+            <thead>
+                <tr>
+                    <th>{{ t.email }}</th>
+                    <th>Nombre</th>
+                    <th>{{ t.role }}</th>
+                    <th>{{ t.statut }}</th>
+                    <th>{{ t.actions }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for u in utilisateurs %}
+                <tr>
+                    <td data-label="{{ t.email }}">{{ u.email }}</td>
+                    <td data-label="{{ t.nom }}">{{ u.nom or '-' }}</td>
+                    <td data-label="{{ t.role }}">{% if u.role == 'admin' %}{{ t.role_admin }}{% else %}{{ t.role_user }}{% endif %}</td>
+                    <td data-label="{{ t.statut }}">
+                        {% if u.est_actif %}
+                        <span class="badge-statut badge-libre">{{ t.compte_actif }}</span>
+                        {% else %}
+                        <span class="badge-statut badge-occupe">{{ t.compte_inactif }}</span>
+                        {% endif %}
+                    </td>
+                    <td class="cellule-actions" data-label="{{ t.actions }}">
+                        <div class="cellule-actions-ligne">
+                            <button
+                                type="button"
+                                class="btn btn-secondaire btn-petit btn-modifier-compte"
+                                data-id="{{ u.id }}"
+                                data-email="{{ u.email }}"
+                                data-nom="{{ u.nom }}"
+                                data-role="{{ u.role }}"
+                                onclick="ouvrirModalModifierCompte(this)"
+                            >
+                                {{ t.modifier }}
+                            </button>
+                            {% if u.id != utilisateur_courant.id %}
+                            <form method="post" action="/admin/users/{{ u.id }}/toggle" class="form-inline">
+                                <button type="submit" class="btn btn-secondaire btn-petit">
+                                    {% if u.est_actif %}{{ t.desactiver }}{% else %}{{ t.activer }}{% endif %}
+                                </button>
+                            </form>
+                            {% endif %}
+                        </div>
+                        {% if u.id != utilisateur_courant.id %}
+                        <div class="cellule-actions-ligne">
+                            <form method="post" action="/admin/users/{{ u.id }}/supprimer" class="form-inline"
+                                  onsubmit="return confirm('{{ t.confirmer_suppression }}');">
+                                <button type="submit" class="btn btn-danger btn-petit">{{ t.supprimer }}</button>
+                            </form>
+                        </div>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<div id="modal-creer-compte" class="modal" hidden>
+    <div class="modal-fond" onclick="fermerModales()"></div>
+    <div class="modal-contenu modal-contenu-large" role="dialog" aria-modal="true" aria-labelledby="modal-creer-compte-titre">
+        <h3 id="modal-creer-compte-titre" class="modal-titre">{{ t.creer_compte }}</h3>
+        <p class="modal-sous-titre">{{ t['creer_compte_desc'] }}</p>
+        <form id="form-creer-compte" method="post" action="/admin/users">
+            <div class="champ-form">
+                <label for="email_nouveau">{{ t.email }}</label>
+                <input type="text" id="email_nouveau" name="email" required autocomplete="off"
+                       inputmode="numeric" pattern="[0-9]{3}" minlength="3" maxlength="3"
+                       placeholder="{{ t['email_placeholder_compte'] }}"
+                       title="{{ t['identifiant_format'] }}">
+            </div>
+            <div class="champ-form">
+                <label for="nom_nouveau">Nombre</label>
+                <input type="text" id="nom_nouveau" name="nom" maxlength="200" required autocomplete="off">
+            </div>
+            <div class="champ-form">
+                <label for="mot_de_passe_nouveau">{{ t.mot_de_passe }}</label>
+                <input type="password" id="mot_de_passe_nouveau" name="mot_de_passe" minlength="3" required autocomplete="new-password">
+            </div>
+            <div class="champ-form">
+                <label for="role_nouveau">{{ t.role }}</label>
+                <select id="role_nouveau" name="role" required>
+                    <option value="user">{{ t.role_user }}</option>
+                    <option value="admin">{{ t.role_admin }}</option>
+                </select>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondaire" onclick="fermerModales()">{{ t.annuler }}</button>
+                <button type="submit" class="btn btn-primaire">{{ t.creer_compte }}</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="modal-modifier-compte" class="modal" hidden>
+    <div class="modal-fond" onclick="fermerModales()"></div>
+    <div class="modal-contenu modal-contenu-large" role="dialog" aria-modal="true" aria-labelledby="modal-modifier-compte-titre">
+        <h3 id="modal-modifier-compte-titre" class="modal-titre">{{ t['modifier_compte'] }}</h3>
+        <p id="modal-modifier-sous-titre" class="modal-sous-titre"></p>
+        <form id="form-modifier-compte" method="post" action="">
+            <div class="champ-form">
+                <label for="email_modifier">{{ t.email }}</label>
+                <input type="text" id="email_modifier" name="email" required autocomplete="off"
+                       inputmode="numeric" pattern="[0-9]{3}" minlength="3" maxlength="3"
+                       title="{{ t['identifiant_format'] }}">
+            </div>
+            <div class="champ-form">
+                <label for="nom_modifier">Nombre</label>
+                <input type="text" id="nom_modifier" name="nom" maxlength="200" required autocomplete="off">
+            </div>
+            <div class="champ-form">
+                <label for="mot_de_passe_modifier">{{ t.mot_de_passe }}</label>
+                <input type="password" id="mot_de_passe_modifier" name="mot_de_passe" minlength="3" autocomplete="new-password" placeholder="{{ t['mot_de_passe_optionnel'] }}">
+            </div>
+            <div class="champ-form">
+                <label for="role_modifier">{{ t.role }}</label>
+                <select id="role_modifier" name="role" required>
+                    <option value="user">{{ t.role_user }}</option>
+                    <option value="admin">{{ t.role_admin }}</option>
+                </select>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondaire" onclick="fermerModales()">{{ t.annuler }}</button>
+                <button type="submit" class="btn btn-primaire">{{ t.enregistrer }}</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function ouvrirModalCreerCompte() {
+    const modal = document.getElementById("modal-creer-compte");
+    if (!modal) {
+        return;
+    }
+    modal.hidden = false;
+    document.body.classList.add("modal-ouverte");
+}
+
+function ouvrirModalModifierCompte(bouton) {
+    const modal = document.getElementById("modal-modifier-compte");
+    const form = document.getElementById("form-modifier-compte");
+    const sousTitre = document.getElementById("modal-modifier-sous-titre");
+    if (!modal || !form || !bouton) {
+        return;
+    }
+
+    const compteId = bouton.getAttribute("data-id");
+    form.action = "/admin/users/" + compteId + "/modifier";
+    document.getElementById("email_modifier").value = bouton.getAttribute("data-email") || "";
+    document.getElementById("nom_modifier").value = bouton.getAttribute("data-nom") || "";
+    document.getElementById("mot_de_passe_modifier").value = "";
+    let role = bouton.getAttribute("data-role") || "user";
+    if (role.indexOf(".") !== -1) {
+        role = role.split(".").pop().toLowerCase();
+    } else {
+        role = role.toLowerCase();
+    }
+    if (role !== "admin" && role !== "user") {
+        role = "user";
+    }
+    document.getElementById("role_modifier").value = role;
+
+    if (sousTitre) {
+        sousTitre.textContent = bouton.getAttribute("data-email") || "";
+    }
+
+    modal.hidden = false;
+    document.body.classList.add("modal-ouverte");
+}
+
+function fermerModales() {
+    const modales = document.querySelectorAll(".modal");
+    modales.forEach(function(modal) {
+        modal.hidden = true;
+    });
+    document.body.classList.remove("modal-ouverte");
+}
+
+document.addEventListener("keydown", function(event) {
+    if (event.key === "Escape") {
+        fermerModales();
+    }
+});
+
+{% if erreur and erreur in ['nom_obligatoire', 'erreur_creation', 'email_existant', 'identifiant_invalide'] and not modifier_id %}
+document.addEventListener("DOMContentLoaded", ouvrirModalCreerCompte);
+{% endif %}
+
+{% if modifier_id %}
+document.addEventListener("DOMContentLoaded", function() {
+    const bouton = document.querySelector('.btn-modifier-compte[data-id="{{ modifier_id }}"]');
+    if (bouton) {
+        ouvrirModalModifierCompte(bouton);
+    }
+});
+{% endif %}
+</script>
+{% endblock %}

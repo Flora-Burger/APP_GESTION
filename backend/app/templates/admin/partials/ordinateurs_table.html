@@ -1,0 +1,59 @@
+<div class="tableau-historique-conteneur">
+    <p class="compteur-resultats">{{ ordinateurs|length }} {{ t.ordinateurs_count }}</p>
+    <table class="tableau-historique tableau-admin-bleu">
+        <thead>
+            <tr>
+                <th>{{ t.nom_ordinateur }}</th>
+                <th>{{ t.marque }}</th>
+                <th>{{ t.modele }}</th>
+                <th>{{ t.utilisateur_assigne }}</th>
+                <th>{{ t.localisation }}</th>
+                <th>{{ t.statut }}</th>
+                <th>{{ t.actions }}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for ordi in ordinateurs %}
+            <tr>
+                <td data-label="{{ t.nom_ordinateur }}">{{ ordi.nom }}</td>
+                <td data-label="{{ t.marque }}">{{ ordi.marque }}</td>
+                <td data-label="{{ t.modele }}">{{ ordi.modele }}</td>
+                <td data-label="{{ t.utilisateur_assigne }}">{{ ordi.utilisateur_assigne or t.non_assigne }}</td>
+                <td data-label="{{ t.localisation }}">{{ ordi.localisation }}</td>
+                <td data-label="{{ t.statut }}">
+                    {% set st = ordi.statut if ordi.statut is string else ordi.statut.value %}
+                    {% if st == 'ok' %}
+                    {% with variante='libre', libelle=t.statut_ok %}
+                    {% include "partials/badge_statut.html" %}
+                    {% endwith %}
+                    {% elif st == 'en_panne' %}
+                    {% with variante='occupe', libelle=t.statut_en_panne %}
+                    {% include "partials/badge_statut.html" %}
+                    {% endwith %}
+                    {% else %}
+                    {% with variante='maintenance', libelle=t.statut_maintenance %}
+                    {% include "partials/badge_statut.html" %}
+                    {% endwith %}
+                    {% endif %}
+                </td>
+                <td class="cellule-actions" data-label="{{ t.actions }}">
+                    <div class="cellule-actions-ligne">
+                        <a href="/admin/ordinateurs/{{ ordi.id }}/modifier" class="btn btn-secondaire btn-petit">{{ t.modifier }}</a>
+                        <a href="/ordinateurs/{{ ordi.id }}/historique" class="btn btn-secondaire btn-petit">{{ t.historique }}</a>
+                    </div>
+                    <div class="cellule-actions-ligne">
+                        <form method="post" action="/admin/ordinateurs/{{ ordi.id }}/supprimer" class="form-inline"
+                              onsubmit="return confirm('{{ t.confirmer_suppression_ordinateur }}');">
+                            <button type="submit" class="btn btn-danger btn-petit">{{ t.supprimer }}</button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="7" class="cellule-vide">{{ t.aucun_resultat }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+{% block titre %}{{ t.ordinateurs }}{% endblock %}
+
+{% block contenu %}
+{% include "partials/lien_retour_accueil.html" %}
+<div class="entete-page-vehicules">
+    <div>
+        <h1 class="titre-page">{{ t.ordinateurs_titre }}</h1>
+    </div>
+    {% if est_admin %}
+    <a href="/admin/ordinateurs" class="btn btn-secondaire btn-admin-vehicules">{{ t.admin_ordinateurs }}</a>
+    {% endif %}
+</div>
+
+<form
+    id="form-filtres"
+    class="barre-filtres"
+    hx-get="/ordinateurs/partials/liste"
+    hx-target="#liste-ordinateurs"
+    hx-trigger="input delay:300ms from:#form-filtres .champ-recherche, change from:#form-filtres select"
+>
+    {% with recherche_id="recherche", recherche_name="recherche", recherche_placeholder=t.recherche_ordinateurs_placeholder, recherche_valeur=filtres_actifs.recherche %}
+    {% include "partials/champ_recherche.html" %}
+    {% endwith %}
+
+    {% include "partials/bouton_ouvrir_filtres.html" %}
+    <div class="barre-filtres-panneau">
+    <div class="barre-filtres-grille">
+    <div class="groupe-filtre">
+        <label for="statut">{{ t.statut }}</label>
+        <select id="statut" name="statut">
+            <option value="">{{ t.tous }}</option>
+            <option value="ok" {% if filtres_actifs.statut == 'ok' %}selected{% endif %}>{{ t.statut_ok }}</option>
+            <option value="en_maintenance" {% if filtres_actifs.statut == 'en_maintenance' %}selected{% endif %}>{{ t.statut_maintenance }}</option>
+            <option value="en_panne" {% if filtres_actifs.statut == 'en_panne' %}selected{% endif %}>{{ t.statut_en_panne }}</option>
+        </select>
+    </div>
+    </div>
+    </div>
+</form>
+
+{% include "partials/legende_statuts.html" %}
+
+<div id="liste-ordinateurs">
+    {% include "ordinateurs/partials/liste_cartes.html" %}
+</div>
+
+<div id="modal-evenement-ordinateur" class="modal" hidden>
+    <div class="modal-fond" onclick="fermerModalesOrdinateur()"></div>
+    <div class="modal-contenu modal-contenu-large" role="dialog" aria-modal="true" aria-labelledby="modal-evenement-ordinateur-titre">
+        <h3 id="modal-evenement-ordinateur-titre" class="modal-titre">{{ t.nouvel_evenement }}</h3>
+        <p id="modal-ordinateur-sous-titre" class="modal-sous-titre"></p>
+        <form
+            id="form-evenement-ordinateur"
+            hx-post=""
+            hx-target="#liste-ordinateurs"
+            hx-swap="innerHTML"
+            hx-include="#form-filtres"
+        >
+            <div class="champ-form">
+                <label for="ordinateur-event-date">{{ t.date_evenement }}</label>
+                <input type="date" id="ordinateur-event-date" name="date_evenement" value="{{ date_aujourdhui }}" required>
+            </div>
+
+            <div class="champ-form">
+                <label for="ordinateur-event-type">{{ t.type_evenement }}</label>
+                <select id="ordinateur-event-type" name="type_evenement" required onchange="basculerResponsableOrdinateurModal()">
+                    <option value="changement_utilisateur">{{ t.evt_changement_utilisateur }}</option>
+                    <option value="entretien">{{ t.evt_entretien }}</option>
+                    <option value="maintenance_terminee">{{ t.evt_maintenance_terminee }}</option>
+                    <option value="intervention_technique">{{ t.evt_intervention_technique }}</option>
+                    <option value="panne">{{ t.evt_panne }}</option>
+                </select>
+            </div>
+
+            <div class="champ-form" id="ordinateur-event-responsable-groupe">
+                <label for="ordinateur-event-responsable">{{ t.utilisateur_responsable }}</label>
+                <input type="text" id="ordinateur-event-responsable" name="utilisateur_responsable" maxlength="150">
+            </div>
+
+            <div class="champ-form">
+                <label for="ordinateur-event-commentaire">{{ t.commentaire_optionnel }}</label>
+                <input type="text" id="ordinateur-event-commentaire" name="commentaire" maxlength="500">
+            </div>
+
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondaire" onclick="fermerModalesOrdinateur()">{{ t.annuler }}</button>
+                <button type="submit" class="btn btn-primaire">{{ t.enregistrer }}</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function configurerFormulaireModalOrdinateur(form, url) {
+    if (!form) {
+        return;
+    }
+    form.setAttribute('hx-post', url);
+    if (typeof htmx !== 'undefined') {
+        htmx.process(form);
+    }
+}
+
+function basculerResponsableOrdinateurModal() {
+    const type = document.getElementById('ordinateur-event-type');
+    const groupe = document.getElementById('ordinateur-event-responsable-groupe');
+    if (!type || !groupe) {
+        return;
+    }
+    groupe.style.display = type.value === 'changement_utilisateur' ? '' : 'none';
+}
+
+function ouvrirModalEvenementOrdinateur(bouton) {
+    const modal = document.getElementById('modal-evenement-ordinateur');
+    const form = document.getElementById('form-evenement-ordinateur');
+    const sousTitre = document.getElementById('modal-ordinateur-sous-titre');
+    if (!modal || !form || !bouton) {
+        return;
+    }
+
+    const ordinateurId = bouton.getAttribute('data-ordinateur-id');
+    configurerFormulaireModalOrdinateur(form, '/ordinateurs/' + ordinateurId + '/evenement');
+
+    document.getElementById('ordinateur-event-date').value = '{{ date_aujourdhui }}';
+    document.getElementById('ordinateur-event-type').value = 'changement_utilisateur';
+    document.getElementById('ordinateur-event-responsable').value = '';
+    document.getElementById('ordinateur-event-commentaire').value = '';
+    if (sousTitre) {
+        sousTitre.textContent = bouton.getAttribute('data-ordinateur-nom') || '';
+    }
+
+    basculerResponsableOrdinateurModal();
+    modal.hidden = false;
+    document.body.classList.add('modal-ouverte');
+}
+
+function fermerModalesOrdinateur() {
+    const modal = document.getElementById('modal-evenement-ordinateur');
+    if (modal) {
+        modal.hidden = true;
+    }
+    document.body.classList.remove('modal-ouverte');
+}
+
+document.body.addEventListener('htmx:afterSwap', function(event) {
+    if (event.detail.target && event.detail.target.id === 'liste-ordinateurs') {
+        fermerModalesOrdinateur();
+    }
+});
+</script>
+{% endblock %}

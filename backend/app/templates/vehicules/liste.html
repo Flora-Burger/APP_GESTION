@@ -1,0 +1,489 @@
+{% extends "base.html" %}
+
+{% block titre %}{{ t.vehicules }}{% endblock %}
+
+{% block contenu %}
+{% include "partials/lien_retour_accueil.html" %}
+<div class="entete-page-vehicules">
+    <div>
+        <h1 class="titre-page">{{ t.vehicules_titre }}</h1>
+    </div>
+    {% if est_admin %}
+    <a href="/admin/vehicules" class="btn btn-secondaire btn-admin-vehicules">{{ t.admin_vehicules }}</a>
+    {% endif %}
+</div>
+
+<form
+    id="form-filtres"
+    class="barre-filtres"
+    hx-get="/vehicules/partials/liste"
+    hx-target="#liste-vehicules"
+    hx-trigger="input delay:300ms from:#form-filtres .champ-recherche, change from:#form-filtres select"
+>
+    {% with recherche_id="recherche", recherche_name="recherche", recherche_placeholder=t.recherche_placeholder, recherche_valeur=filtres_actifs.recherche %}
+    {% include "partials/champ_recherche.html" %}
+    {% endwith %}
+
+    {% include "partials/bouton_ouvrir_filtres.html" %}
+    <div class="barre-filtres-panneau">
+    <div class="barre-filtres-grille">
+    <div class="groupe-filtre">
+        <label for="statut">{{ t.statut }}</label>
+        <select id="statut" name="statut">
+            <option value="">{{ t.tous }}</option>
+            <option value="libre" {% if filtres_actifs.statut == 'libre' %}selected{% endif %}>{{ t.statut_libre }}</option>
+            <option value="occupe" {% if filtres_actifs.statut == 'occupe' %}selected{% endif %}>{{ t.statut_occupe }}</option>
+            <option value="au_garage" {% if filtres_actifs.statut == 'au_garage' %}selected{% endif %}>{{ t.statut_au_garage }}</option>
+        </select>
+    </div>
+
+    <div class="groupe-filtre">
+        <label for="itv">{{ t.itv }}</label>
+        <select id="itv" name="itv">
+            <option value="">{{ t.tous }}</option>
+            <option value="valide" {% if filtres_actifs.itv == 'valide' %}selected{% endif %}>{{ t.filtre_itv_valide }}</option>
+            <option value="expire_bientot" {% if filtres_actifs.itv == 'expire_bientot' %}selected{% endif %}>{{ t.filtre_itv_expire_bientot }}</option>
+            <option value="expiree" {% if filtres_actifs.itv == 'expiree' %}selected{% endif %}>{{ t.filtre_itv_expiree }}</option>
+        </select>
+    </div>
+
+    <div class="groupe-filtre">
+        <label for="km_jour">{{ t.kilometrage_journalier }}</label>
+        <select id="km_jour" name="km_jour">
+            <option value="">{{ t.tous }}</option>
+            <option value="moins_30" {% if filtres_actifs.km_jour == 'moins_30' %}selected{% endif %}>{{ t.filtre_km_moins_30 }}</option>
+            <option value="entre_30_60" {% if filtres_actifs.km_jour == 'entre_30_60' %}selected{% endif %}>{{ t.filtre_km_30_60 }}</option>
+            <option value="entre_60_120" {% if filtres_actifs.km_jour == 'entre_60_120' %}selected{% endif %}>{{ t.filtre_km_60_120 }}</option>
+            <option value="plus_120" {% if filtres_actifs.km_jour == 'plus_120' %}selected{% endif %}>{{ t.filtre_km_plus_120 }}</option>
+        </select>
+    </div>
+    </div>
+    </div>
+</form>
+
+{% include "partials/legende_statuts.html" %}
+
+<div id="liste-vehicules">
+    {% include "vehicules/partials/liste_cartes.html" %}
+</div>
+
+<div id="modal-assigner" class="modal" hidden>
+    <div class="modal-fond" onclick="fermerModales()"></div>
+    <div class="modal-contenu" role="dialog" aria-modal="true" aria-labelledby="modal-assigner-titre">
+        <h3 id="modal-assigner-titre" class="modal-titre">{{ t.utiliser_ce_vehicule }}</h3>
+        <p id="modal-assigner-sous-titre" class="modal-sous-titre"></p>
+        <p class="modal-question">{{ t.question_utiliser_vehicule }}</p>
+        <p class="modal-utilisateur-courant">{{ t.utilisateur_assigne }}: <strong>{{ nom_utilisateur_courant }}</strong></p>
+        <form id="form-assigner" hx-post="" hx-target="#liste-vehicules" hx-swap="innerHTML" hx-include="#form-filtres">
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondaire" onclick="fermerModales()">{{ t.non }}</button>
+                <button type="submit" class="btn btn-primaire">{{ t.oui }}</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="modal-liberer" class="modal" hidden>
+    <div class="modal-fond" onclick="fermerModales()"></div>
+    <div class="modal-contenu" role="dialog" aria-modal="true" aria-labelledby="modal-liberer-titre">
+        <h3 id="modal-liberer-titre" class="modal-titre">{{ t.liberer_ce_vehicule }}</h3>
+        <p id="modal-liberer-sous-titre" class="modal-sous-titre"></p>
+        <p class="modal-question">{{ t.question_liberer_vehicule }}</p>
+        <form id="form-liberer" hx-post="" hx-target="#liste-vehicules" hx-swap="innerHTML" hx-include="#form-filtres">
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondaire" onclick="fermerModales()">{{ t.non }}</button>
+                <button type="submit" class="btn btn-primaire">{{ t.oui }}</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="modal-journal" class="modal" hidden>
+    <div class="modal-fond" onclick="fermerModales()"></div>
+    <div class="modal-contenu modal-contenu-large" role="dialog" aria-modal="true" aria-labelledby="modal-journal-titre">
+        <h3 id="modal-journal-titre" class="modal-titre">{{ t.modifier_donnees_jour }}</h3>
+        <p id="modal-journal-sous-titre" class="modal-sous-titre"></p>
+        <form
+            id="form-journal"
+            hx-post=""
+            hx-target="#liste-vehicules"
+            hx-swap="innerHTML"
+            hx-include="#form-filtres"
+            onsubmit="return validerSoumissionJournal(event)"
+        >
+            <div class="champ-form">
+                <label for="journal-date">{{ t.date_jour }}</label>
+                <input type="date" id="journal-date" name="date_jour" required>
+            </div>
+
+            <div class="champ-form">
+                <label for="journal-km">{{ t.kilometrage_actuel }}</label>
+                <input type="number" id="journal-km" name="kilometrage_actuel_saisi" min="0" step="1" required>
+            </div>
+
+            <div class="champ-form groupe-carburant">
+                <label for="journal-conso">{{ t.litres_plein_label }}</label>
+                <input type="text" id="journal-conso" name="consommation_jour" class="champ-litres">
+            </div>
+
+            <div class="champ-form groupe-carburant">
+                <label for="journal-cout">{{ t.cout_plein_label }}</label>
+                <input type="text" id="journal-cout" name="cout_carburant_jour" class="champ-cout">
+            </div>
+            <p id="erreur-carburant-journal" class="message-erreur-inline" hidden>{{ t.erreur_carburant_lie }}</p>
+
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondaire" onclick="fermerModales()">{{ t.annuler }}</button>
+                <button type="submit" class="btn btn-primaire">{{ t.enregistrer }}</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="modal-itv" class="modal" hidden>
+    <div class="modal-fond" onclick="fermerModales()"></div>
+    <div class="modal-contenu" role="dialog" aria-modal="true" aria-labelledby="modal-itv-titre">
+        <h3 id="modal-itv-titre" class="modal-titre">{{ t.modifier_itv }}</h3>
+        <p id="modal-itv-sous-titre" class="modal-sous-titre"></p>
+        <p class="modal-itv-etat">
+            <span class="modal-itv-etat-libelle">{{ t.itv_etat_actuel }}</span>
+            <span id="itv-etat-actuel" class="badge-itv" role="status"></span>
+        </p>
+        <form
+            id="form-itv"
+            hx-post=""
+            hx-target="#liste-vehicules"
+            hx-swap="innerHTML"
+            hx-include="#form-filtres"
+        >
+            <div class="champ-form">
+                <label for="itv-date">{{ t.date_expiration_itv }}</label>
+                <input type="date" id="itv-date" name="date_expiration_itv" required>
+            </div>
+
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondaire" onclick="fermerModales()">{{ t.annuler }}</button>
+                <button type="submit" class="btn btn-primaire">{{ t.enregistrer }}</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="modal-immobilisation" class="modal" hidden>
+    <div class="modal-fond" onclick="fermerModales()"></div>
+    <div class="modal-contenu" role="dialog" aria-modal="true" aria-labelledby="modal-immobilisation-titre">
+        <h3 id="modal-immobilisation-titre" class="modal-titre">{{ t.immobilisation_titre }}</h3>
+        <p id="modal-immobilisation-sous-titre" class="modal-sous-titre"></p>
+        <div class="bloc-immobilisation bloc-immobilisation-modal">
+            <div class="champ-info">
+                <span class="champ-label">{{ t.garage_label }}</span>
+                <span id="immobilisation-garage" class="champ-valeur"></span>
+            </div>
+            <div class="champ-info">
+                <span class="champ-label">{{ t.motif_label }}</span>
+                <span id="immobilisation-motif" class="champ-valeur"></span>
+            </div>
+            <div class="champ-info">
+                <span class="champ-label">{{ t.date_debut_immobilisation }}</span>
+                <span id="immobilisation-date-debut" class="champ-valeur"></span>
+            </div>
+            <div id="immobilisation-ligne-retour" class="champ-info" hidden>
+                <span class="champ-label">{{ t.date_retour_estimee }}</span>
+                <span id="immobilisation-date-retour" class="champ-valeur"></span>
+            </div>
+            <div id="immobilisation-ligne-commentaire" class="champ-info" hidden>
+                <span class="champ-label">{{ t.commentaire_label }}</span>
+                <span id="immobilisation-commentaire" class="champ-valeur"></span>
+            </div>
+        </div>
+        <div class="modal-actions">
+            <button type="button" class="btn btn-primaire" onclick="fermerModales()">{{ t.fermer }}</button>
+        </div>
+    </div>
+</div>
+
+<div id="modal-garage" class="modal" hidden>
+    <div class="modal-fond" onclick="fermerModales()"></div>
+    <div class="modal-contenu" role="dialog" aria-modal="true" aria-labelledby="modal-garage-titre">
+        <h3 id="modal-garage-titre" class="modal-titre">{{ t.modal_garage_titre }}</h3>
+        <form
+            id="form-garage"
+            hx-post=""
+            hx-target="#liste-vehicules"
+            hx-swap="innerHTML"
+            hx-include="#form-filtres"
+        >
+            <div class="champ-form">
+                <label for="garage-motif">{{ t.motif_label }}</label>
+                <select id="garage-motif" name="motif" required>
+                    <option value="revision">{{ t.motif_revision }}</option>
+                    <option value="panne">{{ t.motif_panne }}</option>
+                    <option value="accident">{{ t.motif_accident }}</option>
+                    <option value="autre">{{ t.motif_autre }}</option>
+                </select>
+            </div>
+
+            <div class="champ-form">
+                <label for="garage-nom">{{ t.garage_label }}</label>
+                <input
+                    type="text"
+                    id="garage-nom"
+                    name="garage"
+                    list="liste-garages"
+                    required
+                    placeholder="{{ t.garage_placeholder }}"
+                >
+                <datalist id="liste-garages">
+                    {% for garage in garages_connus %}
+                    <option value="{{ garage }}"></option>
+                    {% endfor %}
+                </datalist>
+            </div>
+
+            <div class="champ-form">
+                <label for="garage-date-debut">{{ t.date_debut_immobilisation }}</label>
+                <input type="date" id="garage-date-debut" name="date_debut" value="{{ date_aujourdhui }}" required>
+            </div>
+
+            <div class="champ-form">
+                <label for="garage-date-retour">{{ t.date_retour_estimee }}</label>
+                <input type="date" id="garage-date-retour" name="date_retour_estimee">
+            </div>
+
+            <div class="champ-form">
+                <label for="garage-commentaire">{{ t.commentaire_optionnel }}</label>
+                <textarea id="garage-commentaire" name="commentaire" rows="3"></textarea>
+            </div>
+
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondaire" onclick="fermerModales()">{{ t.annuler }}</button>
+                <button type="submit" class="btn btn-primaire">{{ t.confirmer }}</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="modal-remise" class="modal" hidden>
+    <div class="modal-fond" onclick="fermerModales()"></div>
+    <div class="modal-contenu" role="dialog" aria-modal="true" aria-labelledby="modal-remise-titre">
+        <h3 id="modal-remise-titre" class="modal-titre">{{ t.modal_remise_titre }}</h3>
+        <p class="modal-question">{{ t.question_remise_en_service }}</p>
+        <form
+            id="form-remise"
+            hx-post=""
+            hx-target="#liste-vehicules"
+            hx-swap="innerHTML"
+            hx-include="#form-filtres"
+        >
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondaire" onclick="fermerModales()">{{ t.annuler }}</button>
+                <button type="submit" class="btn btn-primaire">{{ t.confirmer }}</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function configurerFormulaireModal(form, url) {
+    if (!form) {
+        return;
+    }
+    form.setAttribute('hx-post', url);
+    if (typeof htmx !== 'undefined') {
+        htmx.process(form);
+    }
+}
+
+function validerSoumissionJournal(event) {
+    const form = event.target;
+    if (!form.checkValidity()) {
+        form.reportValidity();
+        return false;
+    }
+    return validerCarburantJournal();
+}
+
+function ouvrirModalAssigner(bouton) {
+    const modal = document.getElementById('modal-assigner');
+    const form = document.getElementById('form-assigner');
+    const sousTitre = document.getElementById('modal-assigner-sous-titre');
+    if (!modal || !form || !bouton) {
+        return;
+    }
+    configurerFormulaireModal(form, '/vehicules/' + bouton.dataset.vehiculeId + '/assigner');
+    if (sousTitre) {
+        sousTitre.textContent = bouton.dataset.matricule || '';
+    }
+    modal.hidden = false;
+    document.body.classList.add('modal-ouverte');
+}
+
+function ouvrirModalLiberer(bouton) {
+    const modal = document.getElementById('modal-liberer');
+    const form = document.getElementById('form-liberer');
+    const sousTitre = document.getElementById('modal-liberer-sous-titre');
+    if (!modal || !form || !bouton) {
+        return;
+    }
+    configurerFormulaireModal(form, '/vehicules/' + bouton.dataset.vehiculeId + '/liberer');
+    if (sousTitre) {
+        sousTitre.textContent = bouton.dataset.matricule || '';
+    }
+    modal.hidden = false;
+    document.body.classList.add('modal-ouverte');
+}
+
+function ouvrirModalJournal(bouton) {
+    const modal = document.getElementById('modal-journal');
+    const form = document.getElementById('form-journal');
+    const sousTitre = document.getElementById('modal-journal-sous-titre');
+    const erreurCarburant = document.getElementById('erreur-carburant-journal');
+    if (!modal || !form || !bouton) {
+        return;
+    }
+
+    configurerFormulaireModal(form, '/vehicules/' + bouton.dataset.vehiculeId + '/journal');
+    document.getElementById('journal-date').value = bouton.dataset.dateJour || '';
+    document.getElementById('journal-km').value = bouton.dataset.kilometrageActuel || '0';
+    document.getElementById('journal-conso').value = bouton.dataset.consommationJour || '0';
+    document.getElementById('journal-cout').value = bouton.dataset.coutCarburantJour || '0';
+    if (sousTitre) {
+        sousTitre.textContent = bouton.dataset.matricule || '';
+    }
+    if (erreurCarburant) {
+        erreurCarburant.hidden = true;
+    }
+    modal.hidden = false;
+    document.body.classList.add('modal-ouverte');
+}
+
+function ouvrirModalItv(bouton) {
+    const modal = document.getElementById('modal-itv');
+    const form = document.getElementById('form-itv');
+    const sousTitre = document.getElementById('modal-itv-sous-titre');
+    const etatActuel = document.getElementById('itv-etat-actuel');
+    if (!modal || !form || !bouton) {
+        return;
+    }
+
+    configurerFormulaireModal(form, '/vehicules/' + bouton.dataset.vehiculeId + '/itv');
+    document.getElementById('itv-date').value = bouton.dataset.dateExpirationItv || '';
+    if (sousTitre) {
+        sousTitre.textContent = bouton.dataset.matricule || '';
+    }
+    if (etatActuel) {
+        const statutItv = bouton.dataset.statutItv || 'expiree';
+        etatActuel.textContent = bouton.dataset.statutLibelle || '';
+        etatActuel.className = 'badge-itv';
+        if (statutItv === 'valide') {
+            etatActuel.classList.add('badge-itv-valide');
+        } else if (statutItv === 'expire_bientot') {
+            etatActuel.classList.add('badge-itv-orange');
+        } else {
+            etatActuel.classList.add('badge-itv-rouge');
+        }
+    }
+    modal.hidden = false;
+    document.body.classList.add('modal-ouverte');
+}
+
+function ouvrirModalImmobilisation(bouton) {
+    const modal = document.getElementById('modal-immobilisation');
+    if (!modal || !bouton) {
+        return;
+    }
+
+    document.getElementById('modal-immobilisation-sous-titre').textContent = bouton.dataset.matricule || '';
+    document.getElementById('immobilisation-garage').textContent = bouton.dataset.garage || '';
+    document.getElementById('immobilisation-motif').textContent = bouton.dataset.motif || '';
+    document.getElementById('immobilisation-date-debut').textContent = bouton.dataset.dateDebut || '';
+
+    const ligneRetour = document.getElementById('immobilisation-ligne-retour');
+    const dateRetour = bouton.dataset.dateRetour || '';
+    if (ligneRetour) {
+        if (dateRetour) {
+            document.getElementById('immobilisation-date-retour').textContent = dateRetour;
+            ligneRetour.hidden = false;
+        } else {
+            ligneRetour.hidden = true;
+        }
+    }
+
+    const ligneCommentaire = document.getElementById('immobilisation-ligne-commentaire');
+    const commentaire = bouton.dataset.commentaire || '';
+    if (ligneCommentaire) {
+        if (commentaire) {
+            document.getElementById('immobilisation-commentaire').textContent = commentaire;
+            ligneCommentaire.hidden = false;
+        } else {
+            ligneCommentaire.hidden = true;
+        }
+    }
+
+    modal.hidden = false;
+    document.body.classList.add('modal-ouverte');
+}
+
+function ouvrirModalGarage(vehiculeId) {
+    const modal = document.getElementById('modal-garage');
+    const form = document.getElementById('form-garage');
+    if (!modal || !form) {
+        return;
+    }
+    configurerFormulaireModal(form, '/vehicules/' + vehiculeId + '/garage');
+    modal.hidden = false;
+    document.body.classList.add('modal-ouverte');
+}
+
+function ouvrirModalRemise(vehiculeId) {
+    const modal = document.getElementById('modal-remise');
+    const form = document.getElementById('form-remise');
+    if (!modal || !form) {
+        return;
+    }
+    configurerFormulaireModal(form, '/vehicules/' + vehiculeId + '/remettre-en-service');
+    modal.hidden = false;
+    document.body.classList.add('modal-ouverte');
+}
+
+function fermerModales() {
+    const modales = document.querySelectorAll('.modal');
+    modales.forEach(function(modal) {
+        modal.hidden = true;
+    });
+    document.body.classList.remove('modal-ouverte');
+}
+
+document.body.addEventListener('htmx:afterSwap', function(event) {
+    if (event.detail.target && event.detail.target.id === 'liste-vehicules') {
+        fermerModales();
+    }
+});
+
+function parseDecimal(valeur) {
+    const normalise = (valeur || '').toString().replace(',', '.').trim();
+    const nombre = parseFloat(normalise);
+    return isNaN(nombre) ? 0 : nombre;
+}
+
+function validerCarburantJournal() {
+    const litres = parseDecimal(document.getElementById('journal-conso').value);
+    const cout = parseDecimal(document.getElementById('journal-cout').value);
+    const msg = document.getElementById('erreur-carburant-journal');
+
+    if ((litres > 0 && cout <= 0) || (cout > 0 && litres <= 0)) {
+        if (msg) {
+            msg.hidden = false;
+            msg.scrollIntoView({ block: 'nearest' });
+        }
+        return false;
+    }
+    if (msg) {
+        msg.hidden = true;
+    }
+    return true;
+}
+</script>
+{% endblock %}

@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block titre %}{{ t.modifier_ordinateur }}{% endblock %}
+
+{% block contenu %}
+<p class="lien-retour">
+    <a href="/admin/ordinateurs">{{ t.retour_liste }}</a>
+</p>
+
+<h2 class="titre-section">{{ t.modifier_ordinateur }}</h2>
+<p class="sous-titre-page">{{ ordinateur.nom }} - {{ ordinateur.marque }} {{ ordinateur.modele }}</p>
+
+{% if message %}
+<div class="message message-succes">{{ t[message] }}</div>
+{% endif %}
+{% if erreur %}
+<div class="message message-erreur">{{ t[erreur] }}</div>
+{% endif %}
+
+<section class="admin-section">
+    <form method="post" action="/admin/ordinateurs/{{ ordinateur.id }}/modifier" class="formulaire-admin">
+        <div class="grille-form-admin">
+            <div class="champ-form">
+                <label for="nom">{{ t.nom_ordinateur }}</label>
+                <input type="text" id="nom" name="nom" value="{{ ordinateur.nom }}" maxlength="100" required>
+            </div>
+            <div class="champ-form">
+                <label for="numero_serie">{{ t.numero_serie }}</label>
+                <input type="text" id="numero_serie" name="numero_serie" value="{{ ordinateur.numero_serie or '' }}" maxlength="100">
+            </div>
+            <div class="champ-form">
+                <label for="marque">{{ t.marque }}</label>
+                <input type="text" id="marque" name="marque" value="{{ ordinateur.marque }}" maxlength="100" required>
+            </div>
+            <div class="champ-form">
+                <label for="modele">{{ t.modele }}</label>
+                <input type="text" id="modele" name="modele" value="{{ ordinateur.modele }}" maxlength="150" required>
+            </div>
+            <div class="champ-form">
+                <label for="utilisateur_assigne">{{ t.utilisateur_assigne }}</label>
+                <input type="text" id="utilisateur_assigne" name="utilisateur_assigne" value="{{ ordinateur.utilisateur_assigne or '' }}" maxlength="150">
+            </div>
+            <div class="champ-form">
+                <label for="localisation">{{ t.localisation }}</label>
+                <input type="text" id="localisation" name="localisation" value="{{ ordinateur.localisation }}" maxlength="200" required>
+            </div>
+            <div class="champ-form">
+                <label for="systeme_exploitation">{{ t.systeme_exploitation }}</label>
+                <input type="text" id="systeme_exploitation" name="systeme_exploitation" value="{{ ordinateur.systeme_exploitation or '' }}" maxlength="100">
+            </div>
+            <div class="champ-form">
+                <label for="processeur">{{ t.processeur }}</label>
+                <input type="text" id="processeur" name="processeur" value="{{ ordinateur.processeur or '' }}" maxlength="150">
+            </div>
+            <div class="champ-form">
+                <label for="memoire_ram">{{ t.memoire_ram }}</label>
+                <input type="text" id="memoire_ram" name="memoire_ram" value="{{ ordinateur.memoire_ram or '' }}" maxlength="50">
+            </div>
+            <div class="champ-form">
+                <label for="capacite_stockage">{{ t.capacite_stockage }}</label>
+                <input type="text" id="capacite_stockage" name="capacite_stockage" value="{{ ordinateur.capacite_stockage or '' }}" maxlength="100">
+            </div>
+            <div class="champ-form">
+                <label for="date_acquisition">{{ t.date_acquisition }}</label>
+                <input type="date" id="date_acquisition" name="date_acquisition" value="{{ ordinateur.date_acquisition.isoformat() if ordinateur.date_acquisition else '' }}">
+            </div>
+            <div class="champ-form">
+                <label for="garantie">{{ t.garantie }}</label>
+                <input type="text" id="garantie" name="garantie" value="{{ ordinateur.garantie or '' }}" maxlength="200">
+            </div>
+            <div class="champ-form champ-form-large">
+                <p class="aide-champ">
+                    {{ t.statut }}:
+                    <strong>
+                        {% set st = ordinateur.statut if ordinateur.statut is string else ordinateur.statut.value %}
+                        {% if st == 'ok' %}{{ t.statut_ok }}
+                        {% elif st == 'en_panne' %}{{ t.statut_en_panne }}
+                        {% else %}{{ t.statut_maintenance }}{% endif %}
+                    </strong>
+                    ({{ t.statut_deduit_evenements }})
+                </p>
+            </div>
+        </div>
+        <div class="actions-formulaire">
+            <button type="submit" class="btn btn-primaire">{{ t.enregistrer }}</button>
+            <a href="/admin/ordinateurs" class="btn btn-secondaire">{{ t.annuler }}</a>
+        </div>
+    </form>
+</section>
+{% endblock %}

@@ -1,0 +1,78 @@
+{% if vehicule.journaux or vehicule.immobilisations %}
+{% if vehicule.immobilisations %}
+<h3 class="historique-section-titre">{{ t.historique_garage_titre }}</h3>
+<div class="tableau-historique-conteneur">
+    <table class="tableau-historique">
+        <thead>
+            <tr>
+                <th scope="col">{{ t.date_debut_immobilisation }}</th>
+                <th scope="col">{{ t.colonne_garage }}</th>
+                <th scope="col">{{ t.motif_label }}</th>
+                <th scope="col">{{ t.colonne_date_fin }}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for i in vehicule.immobilisations %}
+            <tr>
+                <td data-label="{{ t.date_debut_immobilisation }}">
+                    <time datetime="{{ i.date_debut.isoformat() }}">{{ i.date_debut.strftime('%d/%m/%Y') }}</time>
+                </td>
+                <td data-label="{{ t.colonne_garage }}">{{ i.garage }}</td>
+                <td data-label="{{ t.motif_label }}">{{ t['motif_' ~ i.motif.value] }}</td>
+                <td data-label="{{ t.colonne_date_fin }}">
+                    {% if i.date_fin %}
+                    <time datetime="{{ i.date_fin.isoformat() }}">{{ i.date_fin.strftime('%d/%m/%Y') }}</time>
+                    {% else %}
+                    <span class="historique-en-cours">{{ t.immobilisation_en_cours }}</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% if i.commentaire %}
+            <tr class="historique-ligne-commentaire">
+                <td colspan="4">{{ t.commentaire_label }}: {{ i.commentaire }}</td>
+            </tr>
+            {% endif %}
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+{% if vehicule.journaux %}
+<h3 class="historique-section-titre">{{ t.historique_utilisation_titre }}</h3>
+<div class="tableau-historique-conteneur">
+    <table class="tableau-historique">
+        <thead>
+            <tr>
+                <th scope="col">{{ t.colonne_date }}</th>
+                <th scope="col">{{ t.colonne_utilisateur }}</th>
+                <th scope="col">{{ t.colonne_km_jour }}</th>
+                <th scope="col">{{ t.colonne_litres }}</th>
+                <th scope="col">{{ t.colonne_cout }}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for j in vehicule.journaux %}
+            <tr>
+                <td data-label="{{ t.colonne_date }}">
+                    <time datetime="{{ j.date_jour.isoformat() }}">{{ j.date_jour.strftime('%d/%m/%Y') }}</time>
+                </td>
+                <td data-label="{{ t.colonne_utilisateur }}">{{ j.utilisateur or t.utilisateur_libre }}</td>
+                <td data-label="{{ t.colonne_km_jour }}">{{ j.kilometrage_jour }} {{ t.km_unite }}</td>
+                <td data-label="{{ t.colonne_litres }}">{{ j.consommation_jour }} {{ t.litres_unite }}</td>
+                <td data-label="{{ t.colonne_cout }}">{{ j.cout_carburant_jour }} {{ t.euro_unite }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+{% else %}
+<p class="compteur-resultats">
+    {% if filtres_historique.utilisateur or filtres_historique.date %}
+    {{ t.historique_aucun_resultat_filtre }}
+    {% else %}
+    {{ t.historique_vide }}
+    {% endif %}
+</p>
+{% endif %}

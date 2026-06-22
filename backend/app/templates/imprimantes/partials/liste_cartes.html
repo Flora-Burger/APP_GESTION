@@ -1,0 +1,90 @@
+{% if message_succes %}
+<div class="message message-succes">{{ t[message_succes] }}</div>
+{% endif %}
+{% if message_erreur %}
+<div class="message message-erreur">{{ t[message_erreur] }}</div>
+{% endif %}
+
+<p class="compteur-resultats">{{ imprimantes|length }} {{ t.imprimantes_count }}</p>
+
+{% if imprimantes %}
+<div class="grille-vehicules">
+    {% for imp in imprimantes %}
+    <article class="carte-vehicule carte-imprimante">
+        <div class="carte-vehicule-entete">
+            <div class="carte-vehicule-entete-titre">
+                <h3>{{ imp.nom }}</h3>
+                <a href="/imprimantes/{{ imp.id }}/historique" class="btn-historique" title="{{ t.voir_historique }}">
+                    {{ t.historique }}
+                </a>
+            </div>
+            <div class="carte-vehicule-entete-statut">
+                {% if imp.statut == 'ok' or imp.statut.value == 'ok' %}
+                {% with variante='libre', libelle=t.statut_ok %}
+                {% include "partials/badge_statut.html" %}
+                {% endwith %}
+                {% elif imp.statut == 'panne' or imp.statut.value == 'panne' %}
+                {% with variante='occupe', libelle=t.statut_panne %}
+                {% include "partials/badge_statut.html" %}
+                {% endwith %}
+                {% else %}
+                {% with variante='maintenance', libelle=t.statut_maintenance %}
+                {% include "partials/badge_statut.html" %}
+                {% endwith %}
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="carte-vehicule-corps">
+            <div class="champ-info">
+                <span class="champ-label">{{ t.modele }}</span>
+                <span class="champ-valeur">{{ imp.modele }}</span>
+            </div>
+            <div class="champ-info">
+                <span class="champ-label">{{ t.localisation }}</span>
+                <span class="champ-valeur">{{ imp.localisation }}</span>
+            </div>
+            <div class="champ-info champ-info-principal">
+                <span class="champ-label">{{ t.compteur_pages }}</span>
+                <span class="champ-valeur compteur-pages">{{ imp.compteur_pages }} {{ t.pages_unite }}</span>
+            </div>
+            <div class="champ-info">
+                <span class="champ-label">{{ t.dernier_toner }}</span>
+                <span class="champ-valeur">
+                    {% if imp.date_dernier_toner %}
+                    {{ imp.date_dernier_toner.strftime('%d/%m/%Y') }}
+                    {% else %}
+                    -
+                    {% endif %}
+                </span>
+            </div>
+            <div class="champ-info">
+                <span class="champ-label">{{ t.derniere_maintenance }}</span>
+                <span class="champ-valeur">
+                    {% if imp.date_derniere_maintenance %}
+                    {{ imp.date_derniere_maintenance.strftime('%d/%m/%Y') }}
+                    {% else %}
+                    -
+                    {% endif %}
+                </span>
+            </div>
+        </div>
+
+        <div class="carte-vehicule-actions">
+            <button
+                type="button"
+                class="btn btn-primaire"
+                onclick="ouvrirModalEvenementImprimante(this)"
+                data-imprimante-id="{{ imp.id }}"
+                data-imprimante-nom="{{ imp.nom | e }}"
+                data-compteur-pages="{{ imp.compteur_pages }}"
+            >
+                {{ t.enregistrer_evenement }}
+            </button>
+        </div>
+    </article>
+    {% endfor %}
+</div>
+{% else %}
+<p class="compteur-resultats">{{ t.aucun_resultat }}</p>
+{% endif %}

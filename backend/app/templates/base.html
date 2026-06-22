@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0f3d7a">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="FLORA">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <link rel="apple-touch-icon" href="/static/pwa/icon-192.png">
+    <title>{% block titre %}{{ t.app_titre }}{% endblock %} - {{ nom_entreprise }}</title>
+    <link rel="stylesheet" href="/static/css/style.css?v=67">
+    <link rel="stylesheet" href="/static/css/mobile.css?v=11">
+    <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+    {% block head_extra %}{% endblock %}
+</head>
+<body class="{% block body_class %}{% endblock %}">
+    <header class="en-tete">
+        <a href="/">
+            <img src="{{ logo_url }}" alt="{{ nom_entreprise }}" class="en-tete-logo">
+        </a>
+        <h1 class="en-tete-titre">
+            <a href="/">{{ nom_entreprise }}</a>
+        </h1>
+        {% if utilisateur_courant %}
+        <nav class="en-tete-nav">
+            <span class="en-tete-utilisateur">{{ nom_utilisateur_courant }}</span>
+            {% if est_admin %}
+            <a href="/admin/users" class="en-tete-lien">{{ t.admin_utilisateurs }}</a>
+            {% endif %}
+            <a href="/logout" class="en-tete-lien">{{ t.deconnexion }}</a>
+        </nav>
+        {% endif %}
+    </header>
+
+    <main class="conteneur">
+        {% block contenu %}{% endblock %}
+    </main>
+
+    {% if utilisateur_courant %}
+    {% include "partials/bandeau_installer_pwa.html" %}
+    {% include "partials/nav_mobile.html" %}
+    {% endif %}
+
+    <script>
+    var promptInstallationPwa = null;
+
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js').catch(function() {
+            /* Service worker optionnel */
+        });
+    }
+
+    window.addEventListener('beforeinstallprompt', function(event) {
+        event.preventDefault();
+        promptInstallationPwa = event;
+        var boutonInstaller = document.getElementById('btn-installer-pwa');
+        if (boutonInstaller) {
+            boutonInstaller.hidden = false;
+        }
+        afficherBandeauInstallerPwa();
+    });
+
+    function afficherBandeauInstallerPwa() {
+        if (!window.matchMedia('(max-width: 768px)').matches) {
+            return;
+        }
+        if (window.localStorage.getItem('flora_pwa_ferme') === '1') {
+            return;
+        }
+        if (window.matchMedia('(display-mode: standalone)').matches) {
+            return;
+        }
+        var bandeau = document.getElementById('bandeau-installer-pwa');
+        if (!bandeau) {
+            return;
+        }
+        var ios = /iPad|iPhone|iPod/.test(navigator.userAgent);
+        var texteIos = document.getElementById('bandeau-installer-pwa-ios');
+        var texteAndroid = document.getElementById('bandeau-installer-pwa-android');
+        if (texteIos && texteAndroid) {
+            texteIos.hidden = !ios;
+            texteAndroid.hidden = ios;
+        }
+        bandeau.hidden = false;
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        afficherBandeauInstallerPwa();
+
+        var boutonFermer = document.getElementById('btn-fermer-installer-pwa');
+        if (boutonFermer) {
+            boutonFermer.addEventListener('click', function() {
+                window.localStorage.setItem('flora_pwa_ferme', '1');
+                var bandeau = document.getElementById('bandeau-installer-pwa');
+                if (bandeau) {
+                    bandeau.hidden = true;
+                }
+            });
+        }
+
+        var boutonInstaller = document.getElementById('btn-installer-pwa');
+        if (boutonInstaller) {
+            boutonInstaller.addEventListener('click', function() {
+                if (!promptInstallationPwa) {
+                    return;
+                }
+                promptInstallationPwa.prompt();
+                promptInstallationPwa.userChoice.finally(function() {
+                    promptInstallationPwa = null;
+                    boutonInstaller.hidden = true;
+                    var bandeau = document.getElementById('bandeau-installer-pwa');
+                    if (bandeau) {
+                        bandeau.hidden = true;
+                    }
+                });
+            });
+        }
+    });
+
+    document.addEventListener('click', function(event) {
+        var bouton = event.target.closest('.btn-filtros-toggle');
+        if (!bouton) {
+            return;
+        }
+        var barre = bouton.closest('.barre-filtres');
+        if (!barre) {
+            return;
+        }
+        var ouvert = barre.classList.toggle('filtros-ouverts');
+        bouton.setAttribute('aria-expanded', ouvert ? 'true' : 'false');
+    });
+
+    document.addEventListener('DOMContentLoaded', function() {
+        if (!window.matchMedia('(max-width: 768px)').matches) {
+            return;
+        }
+        document.querySelectorAll('.barre-filtres').forEach(function(barre) {
+            var filtresActifs = Array.from(barre.querySelectorAll('select')).some(function(select) {
+                return select.value;
+            });
+            if (!filtresActifs) {
+                filtresActifs = Array.from(barre.querySelectorAll('input[type="date"]')).some(function(champ) {
+                    return champ.value;
+                });
+            }
+            if (!filtresActifs) {
+                return;
+            }
+            barre.classList.add('filtros-ouverts');
+            var bouton = barre.querySelector('.btn-filtros-toggle');
+            if (bouton) {
+                bouton.setAttribute('aria-expanded', 'true');
+            }
+        });
+    });
+    </script>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>

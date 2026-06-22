@@ -1,0 +1,56 @@
+<div class="tableau-historique-conteneur">
+    <p class="compteur-resultats">{{ imprimantes|length }} {{ t.imprimantes_count }}</p>
+    <table class="tableau-historique tableau-admin-bleu">
+        <thead>
+            <tr>
+                <th>{{ t.nom_imprimante }}</th>
+                <th>{{ t.modele }}</th>
+                <th>{{ t.localisation }}</th>
+                <th>{{ t.compteur_pages }}</th>
+                <th>{{ t.statut }}</th>
+                <th>{{ t.actions }}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for imp in imprimantes %}
+            <tr>
+                <td data-label="{{ t.nom_imprimante }}">{{ imp.nom }}</td>
+                <td data-label="{{ t.modele }}">{{ imp.modele }}</td>
+                <td data-label="{{ t.localisation }}">{{ imp.localisation }}</td>
+                <td data-label="{{ t.compteur_pages }}">{{ imp.compteur_pages }}</td>
+                <td data-label="{{ t.statut }}">
+                    {% if imp.statut == 'ok' or imp.statut.value == 'ok' %}
+                    {% with variante='libre', libelle=t.statut_ok %}
+                    {% include "partials/badge_statut.html" %}
+                    {% endwith %}
+                    {% elif imp.statut == 'panne' or imp.statut.value == 'panne' %}
+                    {% with variante='occupe', libelle=t.statut_panne %}
+                    {% include "partials/badge_statut.html" %}
+                    {% endwith %}
+                    {% else %}
+                    {% with variante='maintenance', libelle=t.statut_maintenance %}
+                    {% include "partials/badge_statut.html" %}
+                    {% endwith %}
+                    {% endif %}
+                </td>
+                <td class="cellule-actions" data-label="{{ t.actions }}">
+                    <div class="cellule-actions-ligne">
+                        <a href="/admin/imprimantes/{{ imp.id }}/modifier" class="btn btn-secondaire btn-petit">{{ t.modifier }}</a>
+                        <a href="/imprimantes/{{ imp.id }}/historique" class="btn btn-secondaire btn-petit">{{ t.historique }}</a>
+                    </div>
+                    <div class="cellule-actions-ligne">
+                        <form method="post" action="/admin/imprimantes/{{ imp.id }}/supprimer" class="form-inline"
+                              onsubmit="return confirm('{{ t.confirmer_suppression_imprimante }}');">
+                            <button type="submit" class="btn btn-danger btn-petit">{{ t.supprimer }}</button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="6" class="cellule-vide">{{ t.aucun_resultat }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

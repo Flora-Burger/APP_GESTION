@@ -1,0 +1,210 @@
+{% if message_succes %}
+<div class="message message-succes">{{ t[message_succes] }}</div>
+{% endif %}
+{% if message_erreur %}
+<div class="message message-erreur">{{ t[message_erreur] }}</div>
+{% endif %}
+
+<p class="compteur-resultats">{{ vehicules|length }} {{ t.vehicules_count }}</p>
+
+{% if vehicules %}
+<div class="grille-vehicules">
+    {% for v in vehicules %}
+    <article class="carte-vehicule">
+        <div class="carte-vehicule-photo">
+            <img src="{{ v.photo_url_affiche }}" alt="{{ v.modele_affiche }}">
+        </div>
+
+        <div class="carte-vehicule-entete">
+            <div class="carte-vehicule-entete-titre">
+                <h3>{{ v.matricule }}</h3>
+                <a href="/vehicules/{{ v.id }}/historique" class="btn-historique" title="{{ t.voir_historique }}">
+                    {{ t.historique }}
+                </a>
+            </div>
+            <div class="carte-vehicule-entete-statut">
+                {% if v.statut_affichage.value == 'disponible' %}
+                <button
+                    type="button"
+                    class="badge-statut badge-disponible badge-statut-cliquable"
+                    onclick="ouvrirModalAssigner(this)"
+                    data-vehicule-id="{{ v.id }}"
+                    data-matricule="{{ v.matricule | e }}"
+                    title="{{ t.utiliser_ce_vehicule }}"
+                >
+                    {{ t.statut_disponible }}
+                </button>
+                {% elif v.statut_affichage.value == 'occupe' %}
+                <button
+                    type="button"
+                    class="badge-statut badge-occupe badge-statut-cliquable"
+                    onclick="ouvrirModalLiberer(this)"
+                    data-vehicule-id="{{ v.id }}"
+                    data-matricule="{{ v.matricule | e }}"
+                    title="{{ t.liberer_ce_vehicule }}"
+                >
+                    {{ t.statut_occupe }}
+                </button>
+                {% elif v.statut_affichage.value == 'no_disponible' %}
+                <button
+                    type="button"
+                    class="badge-statut badge-occupe badge-statut-cliquable"
+                    onclick="ouvrirModalItv(this)"
+                    data-vehicule-id="{{ v.id }}"
+                    data-matricule="{{ v.matricule | e }}"
+                    data-statut-libelle="{{ t.itv_expiree | e }}"
+                    data-statut-itv="expiree"
+                    data-date-expiration-itv="{{ v.date_expiration_itv.isoformat() }}"
+                    title="{{ t.modifier_itv }}"
+                >
+                    {{ t.statut_no_disponible }}
+                </button>
+                {% else %}
+                <div class="carte-statut-groupe">
+                    <span class="badge-statut badge-au-garage">{{ t.statut_au_garage }}</span>
+                    {% if v.immobilisation_active %}
+                    <button
+                        type="button"
+                        class="btn-info-statut"
+                        onclick="ouvrirModalImmobilisation(this)"
+                        title="{{ t.voir_immobilisation }}"
+                        aria-label="{{ t.voir_immobilisation }}"
+                        data-matricule="{{ v.matricule | e }}"
+                        data-garage="{{ v.immobilisation_active.garage | e }}"
+                        data-motif="{{ t['motif_' ~ v.immobilisation_active.motif.value] | e }}"
+                        data-date-debut="{{ v.immobilisation_active.date_debut.strftime('%d/%m/%Y') }}"
+                        data-date-retour="{{ v.immobilisation_active.date_retour_estimee.strftime('%d/%m/%Y') if v.immobilisation_active.date_retour_estimee else '' }}"
+                        data-commentaire="{{ (v.immobilisation_active.commentaire or '') | e }}"
+                    >
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <circle cx="12" cy="12" r="9"/>
+                            <path d="M12 10v6"/>
+                            <path d="M12 7h.01"/>
+                        </svg>
+                    </button>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="carte-vehicule-corps">
+            <div class="champ-info">
+                <span class="champ-label">{{ t.modele }}</span>
+                <span class="champ-valeur">{{ v.modele_affiche }}</span>
+            </div>
+
+            <div class="champ-info">
+                <span class="champ-label">{{ t.utilisateur_jour }}</span>
+                <span class="champ-valeur">
+                    {% if v.utilisateur_jour %}
+                    {{ v.utilisateur_jour }}
+                    {% else %}
+                    {{ t.utilisateur_libre }}
+                    {% endif %}
+                </span>
+            </div>
+
+            <div class="champ-info">
+                <span class="champ-label">{{ t.kilometrage_actuel }}</span>
+                <span class="champ-valeur">{{ v.kilometrage_actuel }} {{ t.km_unite }}</span>
+            </div>
+
+            <div class="champ-info">
+                <span class="champ-label">{{ t.kilometrage_journalier }}</span>
+                <span class="champ-valeur">{{ v.kilometrage_jour_aujourdhui }} {{ t.km_unite }}</span>
+            </div>
+
+            <div class="champ-info">
+                <span class="champ-label">{{ t.consommation_jour }}</span>
+                <span class="champ-valeur">{{ v.consommation_jour_aujourdhui }} {{ t.litres_unite }}</span>
+            </div>
+
+            <div class="champ-info">
+                <span class="champ-label">{{ t.cout_carburant_jour }}</span>
+                <span class="champ-valeur">{{ v.cout_carburant_jour_aujourdhui }} {{ t.euro_unite }}</span>
+            </div>
+
+            <div class="champ-info champ-info-itv">
+                <span class="champ-label">{{ t.itv }}</span>
+                <span class="champ-valeur">
+                    {% if v.statut_itv.value == 'valide' %}
+                    <button
+                        type="button"
+                        class="badge-itv badge-itv-valide badge-itv-cliquable"
+                        onclick="ouvrirModalItv(this)"
+                        data-vehicule-id="{{ v.id }}"
+                        data-matricule="{{ v.matricule | e }}"
+                        data-statut-libelle="{{ t.itv_valide | e }}"
+                        data-statut-itv="valide"
+                        data-date-expiration-itv="{{ v.date_expiration_itv.isoformat() }}"
+                        title="{{ t.modifier_itv }}"
+                    >{{ t.itv_valide }}</button>
+                    <span class="itv-date">{{ t.itv_hasta_el }} {{ v.date_expiration_itv.strftime('%d/%m/%Y') }}</span>
+                    {% elif v.statut_itv.value == 'expire_bientot' %}
+                    <button
+                        type="button"
+                        class="badge-itv badge-itv-orange badge-itv-cliquable"
+                        onclick="ouvrirModalItv(this)"
+                        data-vehicule-id="{{ v.id }}"
+                        data-matricule="{{ v.matricule | e }}"
+                        data-statut-libelle="{{ t.itv_expire_bientot | e }}"
+                        data-statut-itv="expire_bientot"
+                        data-date-expiration-itv="{{ v.date_expiration_itv.isoformat() }}"
+                        title="{{ t.modifier_itv }}"
+                    >{{ t.itv_expire_bientot }}</button>
+                    <span class="itv-date">{{ t.itv_hasta_el }} {{ v.date_expiration_itv.strftime('%d/%m/%Y') }}</span>
+                    {% else %}
+                    <button
+                        type="button"
+                        class="badge-itv badge-itv-rouge badge-itv-cliquable"
+                        onclick="ouvrirModalItv(this)"
+                        data-vehicule-id="{{ v.id }}"
+                        data-matricule="{{ v.matricule | e }}"
+                        data-statut-libelle="{{ t.itv_expiree | e }}"
+                        data-statut-itv="expiree"
+                        data-date-expiration-itv="{{ v.date_expiration_itv.isoformat() }}"
+                        title="{{ t.modifier_itv }}"
+                    >{{ t.itv_expiree }}</button>
+                    <span class="itv-date itv-date-expiree">{{ t.itv_desde_el }} {{ v.date_expiration_itv.strftime('%d/%m/%Y') }}</span>
+                    {% endif %}
+                </span>
+            </div>
+        </div>
+
+        <div class="carte-vehicule-actions">
+            {% if v.statut_affichage.value == 'au_garage' %}
+            <button
+                type="button"
+                class="btn btn-primaire"
+                onclick="ouvrirModalRemise({{ v.id }})"
+            >
+                {{ t.remettre_en_service }}
+            </button>
+            {% else %}
+            {% if v.utilisateur_jour and (est_admin or v.utilisateur_jour == nom_utilisateur_courant) and v.statut_affichage.value != 'au_garage' %}
+            <button
+                type="button"
+                class="btn btn-primaire"
+                onclick="ouvrirModalJournal(this)"
+                data-vehicule-id="{{ v.id }}"
+                data-matricule="{{ v.matricule }}"
+                data-date-jour="{{ date_aujourdhui if date_aujourdhui is defined else '' }}"
+                data-kilometrage-actuel="{{ v.kilometrage_actuel }}"
+                data-consommation-jour="{{ v.consommation_session_aujourdhui }}"
+                data-cout-carburant-jour="{{ v.cout_session_aujourdhui }}"
+            >
+                {{ t.modifier_donnees_jour }}
+            </button>
+            {% endif %}
+            <button type="button" class="btn btn-secondaire" onclick="ouvrirModalGarage({{ v.id }})">
+                {{ t.mettre_au_garage }}
+            </button>
+            {% endif %}
+        </div>
+    </article>
+    {% endfor %}
+</div>
+{% else %}
+<p class="compteur-resultats">{{ t.aucun_resultat }}</p>
+{% endif %}

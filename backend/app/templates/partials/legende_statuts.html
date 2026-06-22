@@ -1,0 +1,21 @@
+<details class="legende-statuts">
+    <summary class="legende-statuts-titre">{{ t.legende_statuts }}</summary>
+    <ul class="legende-statuts-liste">
+        <li class="legende-statuts-item">
+            <span class="legende-statuts-pastille legende-statuts-pastille-libre" aria-hidden="true"></span>
+            <span>{{ t.statut_disponible }} / {{ t.statut_ok }}</span>
+        </li>
+        <li class="legende-statuts-item">
+            <span class="legende-statuts-pastille legende-statuts-pastille-occupe" aria-hidden="true"></span>
+            <span>{{ t.statut_occupe }} / {{ t.statut_en_panne }} / {{ t.statut_no_disponible }}</span>
+        </li>
+        <li class="legende-statuts-item">
+            <span class="legende-statuts-pastille legende-statuts-pastille-maintenance" aria-hidden="true"></span>
+            <span>{{ t.statut_maintenance }}</span>
+        </li>
+        <li class="legende-statuts-item">
+            <span class="legende-statuts-pastille legende-statuts-pastille-info" aria-hidden="true">i</span>
+            <span>{{ t.legende_statut_info }}</span>
+        </li>
+    </ul>
+</details>

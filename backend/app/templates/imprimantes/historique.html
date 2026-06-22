@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block titre %}{{ t.historique_imprimante_titre }}{% endblock %}
+
+{% block contenu %}
+<div class="historique-entete">
+    <a href="/imprimantes" class="lien-retour">{{ t.retour_liste }}</a>
+    <div class="historique-vehicule-resume">
+        <div>
+            <h2 class="titre-section">{{ t.historique_imprimante_titre }}</h2>
+            <p class="sous-titre-page">{{ imprimante.nom }} - {{ imprimante.modele }}</p>
+            <p class="historique-km-actuel">{{ t.compteur_pages }}: <strong>{{ imprimante.compteur_pages }} {{ t.pages_unite }}</strong></p>
+            <p class="historique-meta">{{ t.localisation }}: {{ imprimante.localisation }}</p>
+        </div>
+    </div>
+</div>
+
+{% if imprimante.evenements %}
+<div class="tableau-historique-conteneur">
+    <table class="tableau-historique">
+        <thead>
+            <tr>
+                <th scope="col">{{ t.colonne_date }}</th>
+                <th scope="col">{{ t.type_evenement }}</th>
+                <th scope="col">{{ t.compteur_pages }}</th>
+                <th scope="col">{{ t.commentaire_optionnel }}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for e in imprimante.evenements %}
+            <tr>
+                <td data-label="{{ t.colonne_date }}">
+                    <time datetime="{{ e.date_evenement.isoformat() }}">{{ e.date_evenement.strftime('%d/%m/%Y') }}</time>
+                </td>
+                <td data-label="{{ t.type_evenement }}">
+                    {% set te = e.type_evenement if e.type_evenement is string else e.type_evenement.value %}
+                    {% if te == 'compteur' %}{{ t.evt_compteur }}
+                    {% elif te == 'toner' %}{{ t.evt_toner }}
+                    {% elif te == 'maintenance' %}{{ t.evt_maintenance }}
+                    {% elif te == 'maintenance_terminee' %}{{ t.evt_maintenance_terminee }}
+                    {% elif te == 'panne' %}{{ t.evt_panne }}
+                    {% else %}{{ t.evt_reparation }}{% endif %}
+                </td>
+                <td data-label="{{ t.compteur_pages }}">
+                    {% if e.compteur_pages is not none %}{{ e.compteur_pages }} {{ t.pages_unite }}{% else %}-{% endif %}
+                </td>
+                <td data-label="{{ t.commentaire_optionnel }}">{{ e.commentaire or '-' }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<p class="compteur-resultats">{{ t.historique_vide }}</p>
+{% endif %}
+{% endblock %}

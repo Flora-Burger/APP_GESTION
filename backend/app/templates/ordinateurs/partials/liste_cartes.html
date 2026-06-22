@@ -1,0 +1,90 @@
+{% if message_succes %}
+<div class="message message-succes">{{ t[message_succes] }}</div>
+{% endif %}
+{% if message_erreur %}
+<div class="message message-erreur">{{ t[message_erreur] }}</div>
+{% endif %}
+
+<p class="compteur-resultats">{{ ordinateurs|length }} {{ t.ordinateurs_count }}</p>
+
+{% if ordinateurs %}
+<div class="grille-vehicules">
+    {% for ordi in ordinateurs %}
+    <article class="carte-vehicule carte-ordinateur">
+        <div class="carte-vehicule-entete">
+            <div class="carte-vehicule-entete-titre">
+                <h3>{{ ordi.nom }}</h3>
+                <a href="/ordinateurs/{{ ordi.id }}/historique" class="btn-historique" title="{{ t.voir_historique }}">
+                    {{ t.historique }}
+                </a>
+            </div>
+            <div class="carte-vehicule-entete-statut">
+                {% set st = ordi.statut if ordi.statut is string else ordi.statut.value %}
+                {% if st == 'ok' %}
+                {% with variante='libre', libelle=t.statut_ok %}
+                {% include "partials/badge_statut.html" %}
+                {% endwith %}
+                {% elif st == 'en_panne' %}
+                {% with variante='occupe', libelle=t.statut_en_panne %}
+                {% include "partials/badge_statut.html" %}
+                {% endwith %}
+                {% else %}
+                {% with variante='maintenance', libelle=t.statut_maintenance %}
+                {% include "partials/badge_statut.html" %}
+                {% endwith %}
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="carte-vehicule-corps">
+            <div class="champ-info">
+                <span class="champ-label">{{ t.marque }}</span>
+                <span class="champ-valeur">{{ ordi.marque }} {{ ordi.modele }}</span>
+            </div>
+            <div class="champ-info">
+                <span class="champ-label">{{ t.numero_serie }}</span>
+                <span class="champ-valeur">{{ ordi.numero_serie or '-' }}</span>
+            </div>
+            <div class="champ-info champ-info-principal">
+                <span class="champ-label">{{ t.utilisateur_assigne }}</span>
+                <span class="champ-valeur">{{ ordi.utilisateur_assigne or t.non_assigne }}</span>
+            </div>
+            <div class="champ-info">
+                <span class="champ-label">{{ t.localisation }}</span>
+                <span class="champ-valeur">{{ ordi.localisation }}</span>
+            </div>
+            <div class="champ-info">
+                <span class="champ-label">{{ t.systeme_exploitation }}</span>
+                <span class="champ-valeur">{{ ordi.systeme_exploitation or '-' }}</span>
+            </div>
+            <div class="champ-info">
+                <span class="champ-label">{{ t.processeur }}</span>
+                <span class="champ-valeur">{{ ordi.processeur or '-' }}</span>
+            </div>
+            <div class="champ-info">
+                <span class="champ-label">{{ t.memoire_ram }}</span>
+                <span class="champ-valeur">{{ ordi.memoire_ram or '-' }}</span>
+            </div>
+            <div class="champ-info">
+                <span class="champ-label">{{ t.capacite_stockage }}</span>
+                <span class="champ-valeur">{{ ordi.capacite_stockage or '-' }}</span>
+            </div>
+        </div>
+
+        <div class="carte-vehicule-actions">
+            <button
+                type="button"
+                class="btn btn-primaire"
+                onclick="ouvrirModalEvenementOrdinateur(this)"
+                data-ordinateur-id="{{ ordi.id }}"
+                data-ordinateur-nom="{{ ordi.nom | e }}"
+            >
+                {{ t.enregistrer_evenement }}
+            </button>
+        </div>
+    </article>
+    {% endfor %}
+</div>
+{% else %}
+<p class="compteur-resultats">{{ t.aucun_resultat }}</p>
+{% endif %}

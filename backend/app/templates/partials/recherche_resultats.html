@@ -1,0 +1,13 @@
+{% if terme and resultats %}
+<div class="resultats-recherche">
+    {% for resultat in resultats %}
+    <a href="{{ resultat.route_web }}?recherche={{ terme }}" class="resultat-item">
+        <div class="resultat-module">{{ resultat.module_libelle }}</div>
+        <div class="resultat-titre">{{ resultat.titre }}</div>
+        <div>{{ resultat.sous_titre }}</div>
+    </a>
+    {% endfor %}
+</div>
+{% elif terme %}
+<p class="compteur-resultats">{{ t.aucun_resultat }}</p>
+{% endif %}

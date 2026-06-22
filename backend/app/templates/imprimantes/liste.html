@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+
+{% block titre %}{{ t.imprimantes }}{% endblock %}
+
+{% block contenu %}
+{% include "partials/lien_retour_accueil.html" %}
+<div class="entete-page-vehicules">
+    <div>
+        <h1 class="titre-page">{{ t.imprimantes_titre }}</h1>
+    </div>
+    {% if est_admin %}
+    <a href="/admin/imprimantes" class="btn btn-secondaire btn-admin-vehicules">{{ t.admin_imprimantes }}</a>
+    {% endif %}
+</div>
+
+<form
+    id="form-filtres"
+    class="barre-filtres"
+    hx-get="/imprimantes/partials/liste"
+    hx-target="#liste-imprimantes"
+    hx-trigger="input delay:300ms from:#form-filtres .champ-recherche, change from:#form-filtres select"
+>
+    {% with recherche_id="recherche", recherche_name="recherche", recherche_placeholder=t.recherche_imprimantes_placeholder, recherche_valeur=filtres_actifs.recherche %}
+    {% include "partials/champ_recherche.html" %}
+    {% endwith %}
+
+    {% include "partials/bouton_ouvrir_filtres.html" %}
+    <div class="barre-filtres-panneau">
+    <div class="barre-filtres-grille">
+    <div class="groupe-filtre">
+        <label for="statut">{{ t.statut }}</label>
+        <select id="statut" name="statut">
+            <option value="">{{ t.tous }}</option>
+            <option value="ok" {% if filtres_actifs.statut == 'ok' %}selected{% endif %}>{{ t.statut_ok }}</option>
+            <option value="panne" {% if filtres_actifs.statut == 'panne' %}selected{% endif %}>{{ t.statut_panne }}</option>
+            <option value="maintenance" {% if filtres_actifs.statut == 'maintenance' %}selected{% endif %}>{{ t.statut_maintenance }}</option>
+        </select>
+    </div>
+    </div>
+    </div>
+</form>
+
+{% include "partials/legende_statuts.html" %}
+
+<div id="liste-imprimantes">
+    {% include "imprimantes/partials/liste_cartes.html" %}
+</div>
+
+<div id="modal-evenement-imprimante" class="modal" hidden>
+    <div class="modal-fond" onclick="fermerModalesImprimante()"></div>
+    <div class="modal-contenu modal-contenu-large" role="dialog" aria-modal="true" aria-labelledby="modal-evenement-imprimante-titre">
+        <h3 id="modal-evenement-imprimante-titre" class="modal-titre">{{ t.nouvel_evenement }}</h3>
+        <p id="modal-imprimante-sous-titre" class="modal-sous-titre"></p>
+        <form
+            id="form-evenement-imprimante"
+            hx-post=""
+            hx-target="#liste-imprimantes"
+            hx-swap="innerHTML"
+            hx-include="#form-filtres"
+        >
+            <div class="champ-form">
+                <label for="imprimante-event-date">{{ t.date_evenement }}</label>
+                <input type="date" id="imprimante-event-date" name="date_evenement" value="{{ date_aujourdhui }}" required>
+            </div>
+
+            <div class="champ-form">
+                <label for="imprimante-event-type">{{ t.type_evenement }}</label>
+                <select id="imprimante-event-type" name="type_evenement" required onchange="basculerCompteurImprimanteModal()">
+                    <option value="compteur">{{ t.evt_compteur }}</option>
+                    <option value="toner">{{ t.evt_toner }}</option>
+                    <option value="maintenance">{{ t.evt_maintenance }}</option>
+                    <option value="maintenance_terminee">{{ t.evt_maintenance_terminee }}</option>
+                    <option value="panne">{{ t.evt_panne }}</option>
+                    <option value="reparation">{{ t.evt_reparation }}</option>
+                </select>
+            </div>
+
+            <div class="champ-form" id="imprimante-event-compteur-groupe">
+                <label for="imprimante-event-compteur">{{ t.compteur_pages }}</label>
+                <input type="number" id="imprimante-event-compteur" name="compteur_pages" min="0" required>
+            </div>
+
+            <div class="champ-form">
+                <label for="imprimante-event-commentaire">{{ t.commentaire_optionnel }}</label>
+                <input type="text" id="imprimante-event-commentaire" name="commentaire" maxlength="500">
+            </div>
+
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondaire" onclick="fermerModalesImprimante()">{{ t.annuler }}</button>
+                <button type="submit" class="btn btn-primaire">{{ t.enregistrer }}</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function configurerFormulaireModalImprimante(form, url) {
+    if (!form) {
+        return;
+    }
+    form.setAttribute('hx-post', url);
+    if (typeof htmx !== 'undefined') {
+        htmx.process(form);
+    }
+}
+
+function basculerCompteurImprimanteModal() {
+    const type = document.getElementById('imprimante-event-type');
+    const groupe = document.getElementById('imprimante-event-compteur-groupe');
+    const compteur = document.getElementById('imprimante-event-compteur');
+    if (!type || !groupe || !compteur) {
+        return;
+    }
+    const typesAvecCompteur = ['compteur', 'toner', 'maintenance', 'maintenance_terminee', 'panne', 'reparation'];
+    const afficher = typesAvecCompteur.includes(type.value);
+    groupe.style.display = afficher ? '' : 'none';
+    compteur.required = type.value === 'compteur';
+}
+
+function ouvrirModalEvenementImprimante(bouton) {
+    const modal = document.getElementById('modal-evenement-imprimante');
+    const form = document.getElementById('form-evenement-imprimante');
+    const sousTitre = document.getElementById('modal-imprimante-sous-titre');
+    const compteur = document.getElementById('imprimante-event-compteur');
+    if (!modal || !form || !bouton) {
+        return;
+    }
+
+    const imprimanteId = bouton.getAttribute('data-imprimante-id');
+    const compteurPages = bouton.getAttribute('data-compteur-pages') || '0';
+    configurerFormulaireModalImprimante(form, '/imprimantes/' + imprimanteId + '/evenement');
+
+    document.getElementById('imprimante-event-date').value = '{{ date_aujourdhui }}';
+    document.getElementById('imprimante-event-type').value = 'compteur';
+    if (compteur) {
+        compteur.min = compteurPages;
+        compteur.placeholder = compteurPages;
+        compteur.value = '';
+    }
+    document.getElementById('imprimante-event-commentaire').value = '';
+    if (sousTitre) {
+        sousTitre.textContent = bouton.getAttribute('data-imprimante-nom') || '';
+    }
+
+    basculerCompteurImprimanteModal();
+    modal.hidden = false;
+    document.body.classList.add('modal-ouverte');
+}
+
+function fermerModalesImprimante() {
+    const modal = document.getElementById('modal-evenement-imprimante');
+    if (modal) {
+        modal.hidden = true;
+    }
+    document.body.classList.remove('modal-ouverte');
+}
+
+document.body.addEventListener('htmx:afterSwap', function(event) {
+    if (event.detail.target && event.detail.target.id === 'liste-imprimantes') {
+        fermerModalesImprimante();
+    }
+});
+</script>
+{% endblock %}

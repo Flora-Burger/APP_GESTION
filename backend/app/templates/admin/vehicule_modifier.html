@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block titre %}{{ t.modifier_vehicule }}{% endblock %}
+
+{% block contenu %}
+<p class="lien-retour">
+    <a href="/admin/vehicules">{{ t.retour_liste }}</a>
+</p>
+
+<h2 class="titre-section">{{ t.modifier_vehicule }}</h2>
+<p class="sous-titre-page">{{ vehicule.matricule }} - {{ vehicule.modele_affiche }}</p>
+
+{% if message %}
+<div class="message message-succes">{{ t[message] }}</div>
+{% endif %}
+{% if erreur %}
+<div class="message message-erreur">{{ t[erreur] }}</div>
+{% endif %}
+
+<section class="admin-section">
+    <div class="admin-photo-apercu">
+        <img src="{{ vehicule.photo_url_affiche }}" alt="{{ vehicule.modele_affiche }}">
+        <p class="admin-photo-legende">{{ t.photo_actuelle }}</p>
+    </div>
+
+    <form method="post" action="/admin/vehicules/{{ vehicule.id }}/modifier" enctype="multipart/form-data" class="formulaire-admin">
+        <div class="grille-form-admin">
+            <div class="champ-form">
+                <label for="matricule">{{ t.matricule }}</label>
+                <input type="text" id="matricule" name="matricule" value="{{ vehicule.matricule }}" maxlength="20" required>
+            </div>
+            <div class="champ-form">
+                <label for="modele">{{ t.modele }}</label>
+                <input type="text" id="modele" name="modele" value="{{ vehicule.modele }}" maxlength="100" required>
+            </div>
+            <div class="champ-form champ-form-large">
+                <label for="photo">{{ t.changer_photo }}</label>
+                <input type="file" id="photo" name="photo" accept="image/jpeg,image/png,image/webp">
+                <p class="aide-champ">{{ t.photo_aide }}</p>
+            </div>
+        </div>
+        <div class="actions-formulaire">
+            <button type="submit" class="btn btn-primaire">{{ t.enregistrer }}</button>
+            <a href="/admin/vehicules" class="btn btn-secondaire">{{ t.annuler }}</a>
+        </div>
+    </form>
+</section>
+{% endblock %}

@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block titre %}{{ t.admin_ordinateurs }}{% endblock %}
+{% block body_class %}page-admin-ordinateurs{% endblock %}
+
+{% block contenu %}
+<p class="lien-retour">
+    <a href="/ordinateurs">{{ t.retour_liste }}</a>
+</p>
+
+<h1 class="titre-page">{{ t.admin_ordinateurs }}</h1>
+
+{% if message %}
+<div class="message message-succes">{{ t[message] }}</div>
+{% endif %}
+{% if erreur %}
+<div class="message message-erreur">{{ t[erreur] }}</div>
+{% endif %}
+
+<section class="admin-section">
+    <form method="post" action="/admin/ordinateurs" class="formulaire-admin">
+        <div class="grille-form-admin">
+            <div class="champ-form">
+                <label for="nom">{{ t.nom_ordinateur }}</label>
+                <input type="text" id="nom" name="nom" maxlength="100" required>
+            </div>
+            <div class="champ-form">
+                <label for="numero_serie">{{ t.numero_serie }}</label>
+                <input type="text" id="numero_serie" name="numero_serie" maxlength="100">
+            </div>
+            <div class="champ-form">
+                <label for="marque">{{ t.marque }}</label>
+                <input type="text" id="marque" name="marque" maxlength="100" required>
+            </div>
+            <div class="champ-form">
+                <label for="modele">{{ t.modele }}</label>
+                <input type="text" id="modele" name="modele" maxlength="150" required>
+            </div>
+            <div class="champ-form">
+                <label for="utilisateur_assigne">{{ t.utilisateur_assigne }}</label>
+                <input type="text" id="utilisateur_assigne" name="utilisateur_assigne" maxlength="150">
+            </div>
+            <div class="champ-form">
+                <label for="localisation">{{ t.localisation }}</label>
+                <input type="text" id="localisation" name="localisation" maxlength="200" required>
+            </div>
+            <div class="champ-form">
+                <label for="systeme_exploitation">{{ t.systeme_exploitation }}</label>
+                <input type="text" id="systeme_exploitation" name="systeme_exploitation" maxlength="100">
+            </div>
+            <div class="champ-form">
+                <label for="processeur">{{ t.processeur }}</label>
+                <input type="text" id="processeur" name="processeur" maxlength="150">
+            </div>
+            <div class="champ-form">
+                <label for="memoire_ram">{{ t.memoire_ram }}</label>
+                <input type="text" id="memoire_ram" name="memoire_ram" maxlength="50" placeholder="16 Go">
+            </div>
+            <div class="champ-form">
+                <label for="capacite_stockage">{{ t.capacite_stockage }}</label>
+                <input type="text" id="capacite_stockage" name="capacite_stockage" maxlength="100" placeholder="512 Go SSD">
+            </div>
+            <div class="champ-form">
+                <label for="date_acquisition">{{ t.date_acquisition }}</label>
+                <input type="date" id="date_acquisition" name="date_acquisition">
+            </div>
+            <div class="champ-form">
+                <label for="garantie">{{ t.garantie }}</label>
+                <input type="text" id="garantie" name="garantie" maxlength="200" placeholder="{{ t.garantie_placeholder }}">
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primaire">{{ t.ajouter_ordinateur }}</button>
+    </form>
+</section>
+
+<section class="admin-section">
+    <h3>{{ t.liste_ordinateurs_admin }}</h3>
+    <form
+        id="form-filtres"
+        class="barre-filtres"
+        hx-get="/admin/ordinateurs/partials/liste"
+        hx-target="#liste-admin-ordinateurs"
+        hx-trigger="input delay:300ms from:#form-filtres .champ-recherche, change from:#form-filtres select"
+    >
+        {% with recherche_id="recherche", recherche_name="recherche", recherche_placeholder=t.recherche_ordinateurs_placeholder, recherche_valeur=filtres_actifs.recherche %}
+        {% include "partials/champ_recherche.html" %}
+        {% endwith %}
+    </form>
+    <div id="liste-admin-ordinateurs">
+        {% include "admin/partials/ordinateurs_table.html" %}
+    </div>
+</section>
+{% endblock %}

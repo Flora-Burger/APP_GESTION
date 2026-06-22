@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block titre %}{{ t.accueil }}{% endblock %}
+{% block body_class %}page-accueil{% endblock %}
+
+{% block contenu %}
+<section class="accueil-hero" aria-labelledby="accueil-hero-titre">
+    <div class="accueil-hero-contenu">
+        <img
+            id="accueil-hero-titre"
+            src="{{ logo_url }}"
+            alt="{{ nom_entreprise }}"
+            class="accueil-hero-logo"
+        >
+        <p class="accueil-hero-entreprise">{{ nom_entreprise }}</p>
+        <p class="accueil-hero-sous-titre">{{ t.bienvenue_accueil }}</p>
+    </div>
+</section>
+
+<section class="accueil-recherche section-recherche">
+    <form
+        id="form-filtres"
+        class="barre-filtres accueil-barre-filtres"
+        hx-get="/partials/recherche"
+        hx-target="#resultats-recherche"
+        hx-trigger="input delay:300ms from:#form-filtres .champ-recherche, search from:#form-filtres .champ-recherche"
+    >
+        {% with recherche_id="recherche", recherche_name="q", recherche_placeholder=t.recherche_globale, recherche_valeur="" %}
+        {% include "partials/champ_recherche.html" %}
+        {% endwith %}
+    </form>
+    <div id="resultats-recherche" class="accueil-resultats-recherche"></div>
+</section>
+
+<section class="section-tableau-bord accueil-tableau-bord">
+    <h2 class="titre-section accueil-titre-section">{{ t.tableau_bord }}</h2>
+    <div class="grille-modules grille-tableau-bord">
+        {% for module in modules %}
+        {% if module.actif %}
+        <a href="{{ module.route_web }}" class="carte-module carte-tableau-bord actif">
+            <div class="carte-module-icone-conteneur">
+                {% with module_id=module.id %}
+                {% include "partials/icone_module.html" %}
+                {% endwith %}
+            </div>
+            <h3 class="carte-module-titre">{{ module.libelle_es }}</h3>
+            <p class="carte-module-description">{{ module.description_es }}</p>
+
+            {% if module.id == "vehicules" %}
+            {% set stats = tableau_bord.vehicules %}
+            {% elif module.id == "ordinateurs" %}
+            {% set stats = tableau_bord.ordinateurs %}
+            {% elif module.id == "imprimantes" %}
+            {% set stats = tableau_bord.imprimantes %}
+            {% endif %}
+
+            {% if stats is defined %}
+            <ul class="carte-module-stats">
+                <li class="carte-stat-ligne">
+                    <span class="carte-stat-libelle">{{ t.stat_total }}</span>
+                    <span class="carte-stat-valeur">{{ stats.total }}</span>
+                </li>
+                <li class="carte-stat-ligne">
+                    <span class="carte-stat-libelle">{{ t.stat_en_service }}</span>
+                    <span class="carte-stat-valeur carte-stat-neutre">{{ stats.en_service }}</span>
+                </li>
+                <li class="carte-stat-ligne{% if stats.indisponible > 0 %} carte-stat-ligne-erreur{% endif %}">
+                    <span class="carte-stat-libelle">{{ t.stat_indisponible }}</span>
+                    <span class="carte-stat-valeur carte-stat-erreur">{{ stats.indisponible }}</span>
+                </li>
+            </ul>
+            {% endif %}
+        </a>
+        {% else %}
+        <div class="carte-module carte-tableau-bord inactif">
+            <div class="carte-module-icone-conteneur">
+                {% with module_id=module.id %}
+                {% include "partials/icone_module.html" %}
+                {% endwith %}
+            </div>
+            <h3 class="carte-module-titre">{{ module.libelle_es }}</h3>
+            <p class="carte-module-description">{{ module.description_es }}</p>
+            <span class="badge-proximamente">{{ t.proximamente }}</span>
+        </div>
+        {% endif %}
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

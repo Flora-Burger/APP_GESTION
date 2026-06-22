@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block titre %}{{ t.admin_vehicules }}{% endblock %}
+{% block body_class %}page-admin-vehicules{% endblock %}
+
+{% block contenu %}
+<p class="lien-retour">
+    <a href="/vehicules">{{ t.retour_liste }}</a>
+</p>
+
+<h1 class="titre-page">{{ t.admin_vehicules }}</h1>
+
+{% if message %}
+<div class="message message-succes">{{ t[message] }}</div>
+{% endif %}
+{% if erreur %}
+<div class="message message-erreur">{{ t[erreur] }}</div>
+{% endif %}
+
+<section class="admin-section">
+    <form method="post" action="/admin/vehicules" enctype="multipart/form-data" class="formulaire-admin">
+        <div class="grille-form-admin">
+            <div class="champ-form">
+                <label for="matricule">{{ t.matricule }}</label>
+                <input type="text" id="matricule" name="matricule" maxlength="20" required>
+            </div>
+            <div class="champ-form">
+                <label for="modele">{{ t.modele }}</label>
+                <input type="text" id="modele" name="modele" maxlength="100" required>
+            </div>
+            <div class="champ-form">
+                <label for="kilometrage_actuel">{{ t.kilometrage_actuel }}</label>
+                <input type="number" id="kilometrage_actuel" name="kilometrage_actuel" min="0" step="1" required>
+            </div>
+            <div class="champ-form champ-form-large">
+                <label for="photo">{{ t.photo_vehicule }}</label>
+                <input type="file" id="photo" name="photo" accept="image/jpeg,image/png,image/webp">
+                <p class="aide-champ">{{ t.photo_aide }}</p>
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primaire">{{ t.ajouter_vehicule }}</button>
+    </form>
+</section>
+
+<section class="admin-section">
+    <h3>{{ t.liste_vehicules_admin }}</h3>
+    <form
+        id="form-filtres"
+        class="barre-filtres"
+        hx-get="/admin/vehicules/partials/liste"
+        hx-target="#liste-admin-vehicules"
+        hx-trigger="input delay:300ms from:#form-filtres .champ-recherche, change from:#form-filtres select"
+    >
+        {% with recherche_id="recherche", recherche_name="recherche", recherche_placeholder=t.recherche_placeholder, recherche_valeur=filtres_actifs.recherche %}
+        {% include "partials/champ_recherche.html" %}
+        {% endwith %}
+    </form>
+    <div id="liste-admin-vehicules">
+        {% include "admin/partials/vehicules_table.html" %}
+    </div>
+</section>
+{% endblock %}

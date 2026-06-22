@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block titre %}{{ t.historique_titre }}{% endblock %}
+
+{% block contenu %}
+<div class="historique-entete">
+    <a href="/vehicules" class="lien-retour">{{ t.retour_liste }}</a>
+    <div class="historique-vehicule-resume">
+        {% if vehicule.photo_url_affiche %}
+        <img src="{{ vehicule.photo_url_affiche }}" alt="{{ vehicule.modele_affiche }}" class="historique-photo">
+        {% endif %}
+        <div>
+            <h2 class="titre-section">{{ t.historique_titre }}</h2>
+            <p class="sous-titre-page">{{ vehicule.matricule }} - {{ vehicule.modele_affiche }}</p>
+            <p class="historique-km-actuel">{{ t.kilometrage_actuel }}: <strong>{{ vehicule.kilometrage_actuel }} {{ t.km_unite }}</strong></p>
+        </div>
+    </div>
+</div>
+
+<form
+    id="form-filtres-historique"
+    class="barre-filtres barre-filtres-historique"
+    hx-get="/vehicules/{{ vehicule.id }}/historique/partials/contenu"
+    hx-target="#historique-contenu"
+    hx-trigger="input delay:300ms from:#form-filtres-historique .champ-recherche, change from:#form-filtres-historique input[type=date]"
+>
+    <div class="groupe-filtre groupe-recherche">
+        <label for="recherche-utilisateur" class="libelle-sr-only">{{ t.colonne_utilisateur }}</label>
+        <input
+            type="search"
+            id="recherche-utilisateur"
+            name="recherche_utilisateur"
+            class="champ-recherche"
+            placeholder="{{ t.recherche_historique_utilisateur_placeholder }}"
+            value="{{ filtres_historique.utilisateur }}"
+            autocomplete="off"
+            aria-label="{{ t.colonne_utilisateur }}"
+        >
+    </div>
+    {% include "partials/bouton_ouvrir_filtres.html" %}
+    <div class="barre-filtres-panneau">
+    <div class="barre-filtres-grille">
+    <div class="groupe-filtre">
+        <label for="recherche-date">{{ t.colonne_date }}</label>
+        <input
+            type="date"
+            id="recherche-date"
+            name="recherche_date"
+            value="{{ filtres_historique.date }}"
+        >
+    </div>
+    </div>
+    </div>
+</form>
+
+<div id="historique-contenu">
+    {% include "vehicules/partials/historique_contenu.html" %}
+</div>
+{% endblock %}
