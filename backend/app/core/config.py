@@ -37,7 +37,7 @@ class Parametres(BaseSettings):
     )
 
     nom_entreprise: str = "FLORA"
-    logo_url: str = "/static/img/logo.svg"
+    logo_url: str = "/static/img/logo.png"
     database_url: str = (
         f"sqlite:///{(RACINE_PROJET / 'data' / 'flora.db').as_posix()}"
     )
