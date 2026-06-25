@@ -1,0 +1,10 @@
+[project]
+name = "flora-app-gestion"
+version = "1.0.0"
+requires-python = ">=3.12"
+
+[tool.vercel]
+entrypoint = "backend.app.main:app"
+
+[tool.vercel.scripts]
+build = "python -m alembic upgrade head"

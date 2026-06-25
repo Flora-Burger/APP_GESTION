@@ -75,7 +75,9 @@ async def erreur_validation_formulaire_web(request: Request, exc: RequestValidat
     raise exc
 
 
-app.mount("/static", StaticFiles(directory=str(RACINE_PROJET / "static")), name="static")
+_dossier_static = RACINE_PROJET / "static"
+if _dossier_static.is_dir():
+    app.mount("/static", StaticFiles(directory=str(_dossier_static)), name="static")
 
 # PWA (manifeste et service worker publics)
 app.include_router(router_pwa)
