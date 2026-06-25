@@ -17,31 +17,57 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
+    bind = op.get_bind()
+    dialect = bind.dialect.name
+
     # Date expiration ITV sur vehicules
     with op.batch_alter_table("vehicules") as batch_op:
         batch_op.add_column(sa.Column("date_expiration_itv", sa.Date(), nullable=True))
 
-    op.execute(
-        """
-        UPDATE vehicules
-        SET date_expiration_itv = date('now', '+365 days')
-        WHERE itv_valide = 1 AND date_expiration_itv IS NULL
-        """
-    )
-    op.execute(
-        """
-        UPDATE vehicules
-        SET date_expiration_itv = date('now', '-30 days')
-        WHERE itv_valide = 0 AND date_expiration_itv IS NULL
-        """
-    )
-    op.execute(
-        """
-        UPDATE vehicules
-        SET date_expiration_itv = date('now', '+365 days')
-        WHERE date_expiration_itv IS NULL
-        """
-    )
+    if dialect == "sqlite":
+        op.execute(
+            """
+            UPDATE vehicules
+            SET date_expiration_itv = date('now', '+365 days')
+            WHERE itv_valide = 1 AND date_expiration_itv IS NULL
+            """
+        )
+        op.execute(
+            """
+            UPDATE vehicules
+            SET date_expiration_itv = date('now', '-30 days')
+            WHERE itv_valide = 0 AND date_expiration_itv IS NULL
+            """
+        )
+        op.execute(
+            """
+            UPDATE vehicules
+            SET date_expiration_itv = date('now', '+365 days')
+            WHERE date_expiration_itv IS NULL
+            """
+        )
+    else:
+        op.execute(
+            """
+            UPDATE vehicules
+            SET date_expiration_itv = CURRENT_DATE + INTERVAL '365 days'
+            WHERE itv_valide IS TRUE AND date_expiration_itv IS NULL
+            """
+        )
+        op.execute(
+            """
+            UPDATE vehicules
+            SET date_expiration_itv = CURRENT_DATE - INTERVAL '30 days'
+            WHERE itv_valide IS FALSE AND date_expiration_itv IS NULL
+            """
+        )
+        op.execute(
+            """
+            UPDATE vehicules
+            SET date_expiration_itv = CURRENT_DATE + INTERVAL '365 days'
+            WHERE date_expiration_itv IS NULL
+            """
+        )
 
     with op.batch_alter_table("vehicules") as batch_op:
         batch_op.alter_column("date_expiration_itv", nullable=False)
