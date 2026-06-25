@@ -22,7 +22,11 @@ if config.config_file_name is not None:
 target_metadata = Base.metadata
 
 parametres = obtenir_parametres()
-config.set_main_option("sqlalchemy.url", parametres.database_url)
+# Echapper les % pour ConfigParser (mots de passe URL-encodes)
+config.set_main_option(
+    "sqlalchemy.url",
+    parametres.database_url.replace("%", "%%"),
+)
 
 
 def run_migrations_offline() -> None:
