@@ -1,5 +1,7 @@
 """Abstraction de stockage de fichiers (local ou Vercel Blob)."""
 
+import logging
+import os
 import uuid
 from pathlib import Path
 
@@ -7,6 +9,8 @@ import httpx
 from fastapi import HTTPException, UploadFile, status
 
 from backend.app.core.config import RACINE_PROJET, obtenir_parametres
+
+logger = logging.getLogger(__name__)
 
 EXTENSIONS_AUTORISEES = {".jpg", ".jpeg", ".png", ".webp"}
 TAILLE_MAX_OCTETS = 5 * 1024 * 1024
@@ -16,7 +20,12 @@ MIME_PAR_EXTENSION = {
     ".png": "image/png",
     ".webp": "image/webp",
 }
-HOTE_BLOB_VERCEL = "blob.vercel-storage.com"
+HOTE_BLOB_API = "blob.vercel-storage.com"
+SUFFIXES_URL_BLOB = (
+    HOTE_BLOB_API,
+    ".public.blob.vercel-storage.com",
+    ".private.blob.vercel-storage.com",
+)
 
 
 async def _lire_fichier_upload(fichier: UploadFile) -> tuple[bytes, str]:
@@ -49,6 +58,20 @@ async def _lire_fichier_upload(fichier: UploadFile) -> tuple[bytes, str]:
     return contenu, extension
 
 
+def _obtenir_token_blob() -> str | None:
+    """Retourne le token Blob (OIDC sur Vercel, sinon token statique)."""
+    parametres = obtenir_parametres()
+    if parametres.est_vercel():
+        oidc = os.getenv("VERCEL_OIDC_TOKEN")
+        if oidc:
+            return oidc
+    return parametres.blob_read_write_token
+
+
+def _est_url_blob(url: str) -> bool:
+    return bool(url) and any(suffixe in url for suffixe in SUFFIXES_URL_BLOB)
+
+
 class StockageFichiers:
     """Stockage local (dev) ou Vercel Blob (production)."""
 
@@ -66,7 +89,7 @@ class StockageFichiers:
             return False
         if url.startswith(self.prefixe_local):
             return True
-        return HOTE_BLOB_VERCEL in url
+        return _est_url_blob(url)
 
     def chemin_fichier_local_depuis_url(self, url: str) -> Path | None:
         """Retourne le chemin disque d'une photo locale."""
@@ -81,7 +104,13 @@ class StockageFichiers:
         parametres = obtenir_parametres()
 
         if parametres.utilise_blob():
-            return await self._enregistrer_blob(contenu, extension, parametres)
+            return await self._enregistrer_blob(contenu, extension)
+
+        if parametres.est_vercel():
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="erreur_stockage_blob",
+            )
 
         return self._enregistrer_local(contenu, extension)
 
@@ -96,9 +125,8 @@ class StockageFichiers:
                 chemin.unlink()
             return
 
-        parametres = obtenir_parametres()
-        if parametres.utilise_blob() and HOTE_BLOB_VERCEL in url:
-            self._supprimer_blob(url, parametres)
+        if _est_url_blob(url) and obtenir_parametres().utilise_blob():
+            self._supprimer_blob(url)
 
     def _enregistrer_local(self, contenu: bytes, extension: str) -> str:
         self._assurer_dossier_local()
@@ -107,28 +135,39 @@ class StockageFichiers:
         chemin.write_bytes(contenu)
         return f"{self.prefixe_local}{nom_fichier}"
 
-    async def _enregistrer_blob(
-        self,
-        contenu: bytes,
-        extension: str,
-        parametres,
-    ) -> str:
+    async def _enregistrer_blob(self, contenu: bytes, extension: str) -> str:
+        token = _obtenir_token_blob()
+        if not token:
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="erreur_stockage_blob",
+            )
+
         nom_fichier = f"{uuid.uuid4().hex}{extension}"
         pathname = f"{self.sous_dossier}/{nom_fichier}"
         content_type = MIME_PAR_EXTENSION[extension]
 
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.put(
-                f"https://{HOTE_BLOB_VERCEL}/{pathname}",
-                content=contenu,
-                headers={
-                    "Authorization": f"Bearer {parametres.blob_read_write_token}",
-                    "Content-Type": content_type,
-                    "x-api-version": "7",
-                },
-            )
-            response.raise_for_status()
-            data = response.json()
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                response = await client.put(
+                    f"https://{HOTE_BLOB_API}/{pathname}",
+                    content=contenu,
+                    headers={
+                        "Authorization": f"Bearer {token}",
+                        "Content-Type": content_type,
+                        "x-api-version": "7",
+                        "x-vercel-blob-access": "public",
+                        "x-add-random-suffix": "0",
+                    },
+                )
+                response.raise_for_status()
+                data = response.json()
+        except httpx.HTTPError as exc:
+            logger.exception("Echec upload Vercel Blob (%s)", pathname)
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="erreur_stockage_blob",
+            ) from exc
 
         url = data.get("url")
         if not url:
@@ -138,15 +177,23 @@ class StockageFichiers:
             )
         return url
 
-    def _supprimer_blob(self, url: str, parametres) -> None:
-        with httpx.Client(timeout=30.0) as client:
-            response = client.request(
-                "DELETE",
-                f"https://{HOTE_BLOB_VERCEL}",
-                json={"url": url},
-                headers={
-                    "Authorization": f"Bearer {parametres.blob_read_write_token}",
-                },
-            )
-            if response.status_code not in (200, 404):
-                response.raise_for_status()
+    def _supprimer_blob(self, url: str) -> None:
+        token = _obtenir_token_blob()
+        if not token:
+            return
+
+        try:
+            with httpx.Client(timeout=30.0) as client:
+                response = client.request(
+                    "DELETE",
+                    f"https://{HOTE_BLOB_API}",
+                    json={"url": url},
+                    headers={
+                        "Authorization": f"Bearer {token}",
+                        "x-api-version": "7",
+                    },
+                )
+                if response.status_code not in (200, 404):
+                    response.raise_for_status()
+        except httpx.HTTPError:
+            logger.exception("Echec suppression Vercel Blob (%s)", url)

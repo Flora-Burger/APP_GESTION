@@ -217,6 +217,7 @@ TRADUCTIONS: dict[str, str] = {
     "photo_invalide": "Archivo de imagen no valido",
     "photo_format_invalide": "Formato no permitido (use JPG, PNG o WebP)",
     "photo_trop_volumineuse": "La imagen supera el tamano maximo (5 MB)",
+    "erreur_stockage_blob": "Error al guardar la imagen. Contacte al administrador.",
     "aucun_vehicule": "No hay vehiculos registrados",
     "confirmer_suppression_vehicule": "Eliminar este vehiculo y todo su historico?",
     "vehicule_supprime": "Vehiculo eliminado correctamente",

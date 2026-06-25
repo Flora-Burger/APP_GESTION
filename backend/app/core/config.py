@@ -61,7 +61,9 @@ class Parametres(BaseSettings):
 
     def utilise_blob(self) -> bool:
         """Indique si les uploads utilisent Vercel Blob."""
-        return bool(self.blob_read_write_token)
+        if self.blob_read_write_token:
+            return True
+        return self.est_vercel() and bool(os.getenv("VERCEL_OIDC_TOKEN"))
 
     def est_vercel(self) -> bool:
         """Indique si l'application tourne sur Vercel."""

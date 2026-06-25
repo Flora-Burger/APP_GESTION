@@ -103,6 +103,7 @@ async def creer_vehicule_admin(
             "photo_format_invalide",
             "photo_trop_volumineuse",
             "erreur_kilometrage_invalide",
+            "erreur_stockage_blob",
         }
         erreur = detail if detail in erreurs_connues else "erreur_creation_vehicule"
         return RedirectResponse(url=f"/admin/vehicules?erreur={erreur}", status_code=303)
@@ -167,6 +168,7 @@ async def modifier_vehicule_admin(
             "photo_invalide",
             "photo_format_invalide",
             "photo_trop_volumineuse",
+            "erreur_stockage_blob",
         }
         erreur = detail if detail in erreurs_connues else "erreur_modification_vehicule"
         return RedirectResponse(
