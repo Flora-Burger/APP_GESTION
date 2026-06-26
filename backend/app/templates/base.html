@@ -4,11 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#0f3d7a">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-title" content="FLORA">
-    <link rel="manifest" href="/manifest.webmanifest">
     <link rel="apple-touch-icon" href="/static/pwa/icon-192.png">
     <title>{% block titre %}{{ t.app_titre }}{% endblock %} - {{ nom_entreprise }}</title>
     <link rel="stylesheet" href="/static/css/style.css?v=67">
@@ -40,86 +35,10 @@
     </main>
 
     {% if utilisateur_courant %}
-    {% include "partials/bandeau_installer_pwa.html" %}
     {% include "partials/nav_mobile.html" %}
     {% endif %}
 
     <script>
-    var promptInstallationPwa = null;
-
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/sw.js').catch(function() {
-            /* Service worker optionnel */
-        });
-    }
-
-    window.addEventListener('beforeinstallprompt', function(event) {
-        event.preventDefault();
-        promptInstallationPwa = event;
-        var boutonInstaller = document.getElementById('btn-installer-pwa');
-        if (boutonInstaller) {
-            boutonInstaller.hidden = false;
-        }
-        afficherBandeauInstallerPwa();
-    });
-
-    function afficherBandeauInstallerPwa() {
-        if (!window.matchMedia('(max-width: 768px)').matches) {
-            return;
-        }
-        if (window.localStorage.getItem('flora_pwa_ferme') === '1') {
-            return;
-        }
-        if (window.matchMedia('(display-mode: standalone)').matches) {
-            return;
-        }
-        var bandeau = document.getElementById('bandeau-installer-pwa');
-        if (!bandeau) {
-            return;
-        }
-        var ios = /iPad|iPhone|iPod/.test(navigator.userAgent);
-        var texteIos = document.getElementById('bandeau-installer-pwa-ios');
-        var texteAndroid = document.getElementById('bandeau-installer-pwa-android');
-        if (texteIos && texteAndroid) {
-            texteIos.hidden = !ios;
-            texteAndroid.hidden = ios;
-        }
-        bandeau.hidden = false;
-    }
-
-    document.addEventListener('DOMContentLoaded', function() {
-        afficherBandeauInstallerPwa();
-
-        var boutonFermer = document.getElementById('btn-fermer-installer-pwa');
-        if (boutonFermer) {
-            boutonFermer.addEventListener('click', function() {
-                window.localStorage.setItem('flora_pwa_ferme', '1');
-                var bandeau = document.getElementById('bandeau-installer-pwa');
-                if (bandeau) {
-                    bandeau.hidden = true;
-                }
-            });
-        }
-
-        var boutonInstaller = document.getElementById('btn-installer-pwa');
-        if (boutonInstaller) {
-            boutonInstaller.addEventListener('click', function() {
-                if (!promptInstallationPwa) {
-                    return;
-                }
-                promptInstallationPwa.prompt();
-                promptInstallationPwa.userChoice.finally(function() {
-                    promptInstallationPwa = null;
-                    boutonInstaller.hidden = true;
-                    var bandeau = document.getElementById('bandeau-installer-pwa');
-                    if (bandeau) {
-                        bandeau.hidden = true;
-                    }
-                });
-            });
-        }
-    });
-
     document.addEventListener('click', function(event) {
         var bouton = event.target.closest('.btn-filtros-toggle');
         if (!bouton) {

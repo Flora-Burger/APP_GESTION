@@ -142,18 +142,41 @@
 
     .carte-vehicule {
         overflow: hidden;
+        display: grid;
+        grid-template-columns: 3.25rem 1fr;
+        column-gap: 0.75rem;
+        grid-template-areas:
+            "photo entete"
+            "corps corps"
+            "actions actions";
     }
 
     .carte-vehicule-photo {
-        display: none;
+        display: block;
+        grid-area: photo;
+        width: 3.25rem;
+        height: 2.45rem;
+        margin: 0.5rem 0 0 0.6rem;
+        border-radius: 4px;
+        overflow: hidden;
+        background: #e8ecea;
+        flex-shrink: 0;
+    }
+
+    .carte-vehicule-photo img {
+        width: 100%;
+        height: 100%;
+        max-width: none;
+        object-fit: cover;
     }
 
     .carte-vehicule-entete {
+        grid-area: entete;
         flex-direction: row;
         align-items: flex-start;
         justify-content: space-between;
         gap: 0.35rem;
-        padding: 0.5rem 0.6rem 0;
+        padding: 0.5rem 0.6rem 0 0.15rem;
     }
 
     .carte-vehicule-entete h3 {
@@ -313,6 +336,7 @@
     }
 
     .carte-vehicule-corps {
+        grid-area: corps;
         padding: 0.3rem 0.6rem 0.45rem;
     }
 
@@ -365,6 +389,7 @@
     }
 
     .carte-vehicule-actions {
+        grid-area: actions;
         display: flex;
         flex-direction: column;
         gap: 0.3rem;
