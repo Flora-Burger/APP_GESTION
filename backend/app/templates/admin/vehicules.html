@@ -10,37 +10,19 @@
 
 <h1 class="titre-page">{{ t.admin_vehicules }}</h1>
 
+<div class="admin-utilisateurs-actions">
+    <button type="button" class="btn btn-primaire" onclick="ouvrirModalCreerVehicule()">
+        {{ t.ajouter_vehicule }}
+    </button>
+    <a href="/admin/vehicules/configuracion" class="btn btn-secondaire">{{ t.configuracion_vehicules }}</a>
+</div>
+
 {% if message %}
 <div class="message message-succes">{{ t[message] }}</div>
 {% endif %}
 {% if erreur %}
 <div class="message message-erreur">{{ t[erreur] }}</div>
 {% endif %}
-
-<section class="admin-section">
-    <form method="post" action="/admin/vehicules" enctype="multipart/form-data" class="formulaire-admin">
-        <div class="grille-form-admin">
-            <div class="champ-form">
-                <label for="matricule">{{ t.matricule }}</label>
-                <input type="text" id="matricule" name="matricule" maxlength="20" required>
-            </div>
-            <div class="champ-form">
-                <label for="modele">{{ t.modele }}</label>
-                <input type="text" id="modele" name="modele" maxlength="100" required>
-            </div>
-            <div class="champ-form">
-                <label for="kilometrage_actuel">{{ t.kilometrage_actuel }}</label>
-                <input type="number" id="kilometrage_actuel" name="kilometrage_actuel" min="0" step="1" required>
-            </div>
-            <div class="champ-form champ-form-large">
-                <label for="photo">{{ t.photo_vehicule }}</label>
-                <input type="file" id="photo" name="photo" accept="image/jpeg,image/png,image/webp">
-                <p class="aide-champ">{{ t.photo_aide }}</p>
-            </div>
-        </div>
-        <button type="submit" class="btn btn-primaire">{{ t.ajouter_vehicule }}</button>
-    </form>
-</section>
 
 <section class="admin-section">
     <h3>{{ t.liste_vehicules_admin }}</h3>
@@ -59,4 +41,84 @@
         {% include "admin/partials/vehicules_table.html" %}
     </div>
 </section>
+
+<div id="modal-creer-vehicule" class="modal" hidden>
+    <div class="modal-fond" onclick="fermerModales()"></div>
+    <div class="modal-contenu modal-contenu-large" role="dialog" aria-modal="true" aria-labelledby="modal-creer-vehicule-titre">
+        <h3 id="modal-creer-vehicule-titre" class="modal-titre">{{ t.ajouter_vehicule }}</h3>
+        <form id="form-creer-vehicule" method="post" action="/admin/vehicules" enctype="multipart/form-data" class="formulaire-admin">
+            <div class="grille-form-admin">
+                <div class="champ-form">
+                    <label for="matricule">{{ t.matricule }}</label>
+                    <input type="text" id="matricule" name="matricule" maxlength="20" required>
+                </div>
+                <div class="champ-form">
+                    <label for="modele">{{ t.modele }}</label>
+                    <input type="text" id="modele" name="modele" maxlength="100" required>
+                </div>
+                <div class="champ-form">
+                    <label for="kilometrage_actuel">{{ t.kilometrage_actuel }}</label>
+                    <input type="number" id="kilometrage_actuel" name="kilometrage_actuel" min="0" step="1" required>
+                </div>
+                <div class="champ-form">
+                    <label for="utilisateur_id_creer">{{ t.utilisateur_id }}</label>
+                    <input
+                        type="text"
+                        id="utilisateur_id_creer"
+                        name="utilisateur_id"
+                        inputmode="numeric"
+                        pattern="[0-9]{0,3}"
+                        maxlength="3"
+                        placeholder="{{ t.utilisateur_id_placeholder }}"
+                        title="{{ t.identifiant_format }}"
+                    >
+                    <p class="aide-champ">{{ t.utilisateur_id_aide }}</p>
+                </div>
+                <div class="champ-form champ-form-large">
+                    <label for="photo">{{ t.photo_vehicule }}</label>
+                    <input type="file" id="photo" name="photo" accept="image/jpeg,image/png,image/webp">
+                    <p class="aide-champ">{{ t.photo_aide }}</p>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondaire" onclick="fermerModales()">{{ t.annuler }}</button>
+                <button type="submit" class="btn btn-primaire">{{ t.ajouter_vehicule }}</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function ouvrirModalCreerVehicule() {
+    const modal = document.getElementById('modal-creer-vehicule');
+    if (!modal) {
+        return;
+    }
+    modal.hidden = false;
+    document.body.classList.add('modal-ouverte');
+    const premierChamp = document.getElementById('matricule');
+    if (premierChamp) {
+        premierChamp.focus();
+    }
+}
+
+function fermerModales() {
+    document.querySelectorAll('.modal').forEach(function (modal) {
+        modal.hidden = true;
+    });
+    document.body.classList.remove('modal-ouverte');
+}
+
+document.addEventListener('keydown', function (event) {
+    if (event.key === 'Escape') {
+        fermerModales();
+    }
+});
+
+{% if erreur and erreur in ['erreur_kilometrage_invalide', 'identifiant_invalide', 'utilisateur_introuvable', 'matricule_existant', 'photo_invalide', 'photo_format_invalide', 'photo_trop_volumineuse', 'erreur_creation_vehicule', 'erreur_stockage_blob'] %}
+document.addEventListener('DOMContentLoaded', ouvrirModalCreerVehicule);
+{% endif %}
+</script>
 {% endblock %}

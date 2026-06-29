@@ -10,6 +10,9 @@ from sqlalchemy.orm import Session
 
 from backend.app.core.database import obtenir_session
 from backend.app.core.dependances import contexte_template, templates
+from backend.app.modules.auth.affichage import obtenir_nom_affichage
+from backend.app.modules.auth.identifiant import ID_UTILISATEUR_LIBRE, normaliser_identifiant
+from backend.app.modules.auth.service import AuthService
 from backend.app.modules.vehicules.schemas import (
     DonneesJourVehicule,
     FiltreItv,
@@ -20,6 +23,7 @@ from backend.app.modules.vehicules.schemas import (
     ItvUpdate,
     RemiseEnServiceCreate,
 )
+from backend.app.modules.vehicules.configuration_service import ConfigurationVehiculesService
 from backend.app.modules.vehicules.service import VehiculeService
 
 router = APIRouter(tags=["vehicules-web"])
@@ -44,14 +48,59 @@ def _params_filtres(
     }
 
 
-def _contexte_liste(request: Request, vehicules, **extra):
+def _contexte_liste(request: Request, vehicules, session: Session | None = None, **extra):
     """Contexte commun pour les fragments de liste."""
+    config_flotte = None
+    if session is not None:
+        config_flotte = ConfigurationVehiculesService(session).obtenir()
     return contexte_template(
         request,
         vehicules=vehicules,
+        config_flotte=config_flotte,
         date_aujourdhui=date.today().isoformat(),
         **extra,
     )
+
+
+def _filtre_assignation(request: Request) -> str | None:
+    """Limite la liste au vehicule assigne pour les utilisateurs standards."""
+    utilisateur = getattr(request.state, "utilisateur", None)
+    if utilisateur is None or utilisateur.role == "admin":
+        return None
+    return obtenir_nom_affichage(utilisateur)
+
+
+def _lister_pour_request(
+    request: Request,
+    service: VehiculeService,
+    filtres: dict,
+) -> list:
+    return service.lister(**filtres, utilisateur_assigne=_filtre_assignation(request))
+
+
+def _exiger_admin_web(request: Request) -> None:
+    """Refuse l'acces si l'utilisateur n'est pas administrateur."""
+    utilisateur = getattr(request.state, "utilisateur", None)
+    if utilisateur is None or utilisateur.role != "admin":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="acces_refuse")
+
+
+def _resoudre_utilisateur_assigne(session: Session, utilisateur_id: str) -> str | None:
+    """Convertit l'identifiant 3 chiffres en nom affiche (000 = liberer)."""
+    if not utilisateur_id or not utilisateur_id.strip():
+        return None
+    try:
+        identifiant = normaliser_identifiant(utilisateur_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail="identifiant_invalide") from exc
+
+    if identifiant == ID_UTILISATEUR_LIBRE:
+        return None
+
+    utilisateur = AuthService(session).repo.obtenir_par_email(identifiant)
+    if utilisateur is None or not utilisateur.est_actif:
+        raise HTTPException(status_code=400, detail="utilisateur_introuvable")
+    return obtenir_nom_affichage(utilisateur)
 
 
 @router.get("/vehicules", response_class=HTMLResponse)
@@ -62,10 +111,12 @@ def page_vehicules(
     itv: str | None = None,
     km_jour: str | None = None,
     service: VehiculeService = Depends(_obtenir_service),
+    session: Session = Depends(obtenir_session),
 ):
     """Page principale de gestion des vehicules."""
     filtres = _params_filtres(recherche, statut, itv, km_jour)
-    vehicules = service.lister(**filtres)
+    vehicules = _lister_pour_request(request, service, filtres)
+    config_flotte = ConfigurationVehiculesService(session).obtenir()
 
     return templates.TemplateResponse(
         request,
@@ -73,6 +124,7 @@ def page_vehicules(
         contexte_template(
             request,
             vehicules=vehicules,
+            config_flotte=config_flotte,
             filtres_actifs={
                 "recherche": recherche or "",
                 "statut": statut or "",
@@ -93,15 +145,16 @@ def partial_liste_vehicules(
     itv: str | None = None,
     km_jour: str | None = None,
     service: VehiculeService = Depends(_obtenir_service),
+    session: Session = Depends(obtenir_session),
 ):
     """Fragment HTMX de la liste des vehicules."""
     filtres = _params_filtres(recherche, statut, itv, km_jour)
-    vehicules = service.lister(**filtres)
+    vehicules = _lister_pour_request(request, service, filtres)
 
     return templates.TemplateResponse(
         request,
         "vehicules/partials/liste_cartes.html",
-        _contexte_liste(request, vehicules),
+        _contexte_liste(request, vehicules, session=session),
     )
 
 
@@ -207,6 +260,7 @@ def enregistrer_journal(
     itv: str = Form(default=""),
     km_jour: str = Form(default=""),
     service: VehiculeService = Depends(_obtenir_service),
+    session: Session = Depends(obtenir_session),
 ):
     """Enregistre les donnees du jour depuis le formulaire web."""
     message_erreur = None
@@ -255,7 +309,7 @@ def enregistrer_journal(
         itv or None,
         km_jour or None,
     )
-    vehicules = service.lister(**filtres)
+    vehicules = _lister_pour_request(request, service, filtres)
 
     return templates.TemplateResponse(
         request,
@@ -263,6 +317,7 @@ def enregistrer_journal(
         _contexte_liste(
             request,
             vehicules,
+            session=session,
             message_succes=message_succes,
             message_erreur=message_erreur,
         ),
@@ -279,6 +334,7 @@ def modifier_itv(
     itv: str = Form(default=""),
     km_jour: str = Form(default=""),
     service: VehiculeService = Depends(_obtenir_service),
+    session: Session = Depends(obtenir_session),
 ):
     """Met a jour la date ITV depuis la modal web."""
     message_erreur = None
@@ -304,7 +360,7 @@ def modifier_itv(
         itv or None,
         km_jour or None,
     )
-    vehicules = service.lister(**filtres)
+    vehicules = _lister_pour_request(request, service, filtres)
 
     return templates.TemplateResponse(
         request,
@@ -312,103 +368,7 @@ def modifier_itv(
         _contexte_liste(
             request,
             vehicules,
-            message_succes=message_succes,
-            message_erreur=message_erreur,
-        ),
-    )
-
-
-@router.post("/vehicules/{vehicule_id}/assigner", response_class=HTMLResponse)
-def assigner_vehicule(
-    request: Request,
-    vehicule_id: int,
-    recherche: str = Form(default=""),
-    statut: str = Form(default=""),
-    itv: str = Form(default=""),
-    km_jour: str = Form(default=""),
-    service: VehiculeService = Depends(_obtenir_service),
-):
-    """Assigne le vehicule a l'utilisateur connecte."""
-    message_erreur = None
-    message_succes = None
-    utilisateur = getattr(request.state, "utilisateur", None)
-
-    try:
-        if utilisateur is None:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
-        service.assigner_vehicule(vehicule_id, utilisateur)
-        message_succes = "vehicule_assigne"
-    except HTTPException as exc:
-        if exc.detail == "vehicule_deja_occupe":
-            message_erreur = "erreur_vehicule_deja_occupe"
-        elif exc.detail == "vehicule_au_garage":
-            message_erreur = "erreur_vehicule_au_garage"
-        elif exc.detail == "itv_expiree":
-            message_erreur = "erreur_itv_expiree"
-        else:
-            message_erreur = "erreur_assignation"
-    except ValueError:
-        message_erreur = "erreur_assignation"
-
-    filtres = _params_filtres(
-        recherche or None,
-        statut or None,
-        itv or None,
-        km_jour or None,
-    )
-    vehicules = service.lister(**filtres)
-
-    return templates.TemplateResponse(
-        request,
-        "vehicules/partials/liste_cartes.html",
-        _contexte_liste(
-            request,
-            vehicules,
-            message_succes=message_succes,
-            message_erreur=message_erreur,
-        ),
-    )
-
-
-@router.post("/vehicules/{vehicule_id}/liberer", response_class=HTMLResponse)
-def liberer_vehicule(
-    request: Request,
-    vehicule_id: int,
-    recherche: str = Form(default=""),
-    statut: str = Form(default=""),
-    itv: str = Form(default=""),
-    km_jour: str = Form(default=""),
-    service: VehiculeService = Depends(_obtenir_service),
-):
-    """Libere le vehicule (fin d'utilisation)."""
-    message_erreur = None
-    message_succes = None
-
-    try:
-        service.liberer_vehicule(vehicule_id)
-        message_succes = "vehicule_libere"
-    except HTTPException as exc:
-        if exc.detail == "vehicule_deja_libre":
-            message_erreur = "erreur_vehicule_deja_libre"
-        else:
-            message_erreur = "erreur_liberation"
-    except ValueError:
-        message_erreur = "erreur_liberation"
-
-    filtres = _params_filtres(
-        recherche or None,
-        statut or None,
-        itv or None,
-        km_jour or None,
-    )
-    vehicules = service.lister(**filtres)
-
-    return templates.TemplateResponse(
-        request,
-        "vehicules/partials/liste_cartes.html",
-        _contexte_liste(
-            request,
-            vehicules,
+            session=session,
             message_succes=message_succes,
             message_erreur=message_erreur,
         ),
@@ -429,6 +389,7 @@ def mettre_au_garage(
     itv: str = Form(default=""),
     km_jour: str = Form(default=""),
     service: VehiculeService = Depends(_obtenir_service),
+    session: Session = Depends(obtenir_session),
 ):
     """Immobilise un vehicule depuis la modal web."""
     message_erreur = None
@@ -444,13 +405,19 @@ def mettre_au_garage(
             ),
             commentaire=commentaire.strip() or None,
         )
-        service.mettre_au_garage(vehicule_id, donnees)
+        service.mettre_au_garage(
+            vehicule_id,
+            donnees,
+            getattr(request.state, "utilisateur", None),
+        )
         message_succes = "vehicule_mis_au_garage"
     except ValidationError:
         message_erreur = "erreur_immobilisation"
     except HTTPException as exc:
         if exc.detail == "vehicule_deja_au_garage":
             message_erreur = "erreur_vehicule_deja_au_garage"
+        elif exc.detail == "actualisation_non_autorisee":
+            message_erreur = "erreur_actualisation_non_autorisee"
         else:
             message_erreur = "erreur_immobilisation"
     except ValueError:
@@ -462,7 +429,7 @@ def mettre_au_garage(
         itv or None,
         km_jour or None,
     )
-    vehicules = service.lister(**filtres)
+    vehicules = _lister_pour_request(request, service, filtres)
 
     return templates.TemplateResponse(
         request,
@@ -470,6 +437,7 @@ def mettre_au_garage(
         _contexte_liste(
             request,
             vehicules,
+            session=session,
             message_succes=message_succes,
             message_erreur=message_erreur,
         ),
@@ -485,6 +453,7 @@ def remettre_en_service(
     itv: str = Form(default=""),
     km_jour: str = Form(default=""),
     service: VehiculeService = Depends(_obtenir_service),
+    session: Session = Depends(obtenir_session),
 ):
     """Remet un vehicule en service depuis la modal web."""
     message_erreur = None
@@ -510,7 +479,7 @@ def remettre_en_service(
         itv or None,
         km_jour or None,
     )
-    vehicules = service.lister(**filtres)
+    vehicules = _lister_pour_request(request, service, filtres)
 
     return templates.TemplateResponse(
         request,
@@ -518,6 +487,67 @@ def remettre_en_service(
         _contexte_liste(
             request,
             vehicules,
+            session=session,
+            message_succes=message_succes,
+            message_erreur=message_erreur,
+        ),
+    )
+
+
+@router.post("/vehicules/{vehicule_id}/assignation", response_class=HTMLResponse)
+def modifier_assignation_vehicule(
+    request: Request,
+    vehicule_id: int,
+    utilisateur_id: str = Form(default=""),
+    recherche: str = Form(default=""),
+    statut: str = Form(default=""),
+    itv: str = Form(default=""),
+    km_jour: str = Form(default=""),
+    service: VehiculeService = Depends(_obtenir_service),
+    session: Session = Depends(obtenir_session),
+):
+    """Change l'utilisateur assigne depuis la fiche vehicule (admin)."""
+    message_erreur = None
+    message_succes = None
+
+    try:
+        _exiger_admin_web(request)
+        nom_assigne = _resoudre_utilisateur_assigne(session, utilisateur_id)
+        service.changer_assignation_admin(vehicule_id, nom_assigne)
+        message_succes = (
+            "vehicule_libere"
+            if nom_assigne is None and utilisateur_id.strip()
+            else "assignation_modifiee"
+        )
+    except HTTPException as exc:
+        if exc.detail == "acces_refuse":
+            message_erreur = "erreur_acces_refuse"
+        elif exc.detail == "identifiant_invalide":
+            message_erreur = "identifiant_invalide"
+        elif exc.detail == "utilisateur_introuvable":
+            message_erreur = "utilisateur_introuvable"
+        elif exc.detail == "vehicule_introuvable":
+            message_erreur = "vehicule_introuvable"
+        else:
+            message_erreur = "erreur_assignation"
+    except ValueError:
+        message_erreur = "erreur_assignation"
+
+    filtres = _params_filtres(
+        recherche or None,
+        statut or None,
+        itv or None,
+        km_jour or None,
+    )
+    vehicules = _lister_pour_request(request, service, filtres)
+
+    return templates.TemplateResponse(
+        request,
+        "vehicules/partials/liste_cartes.html",
+        _contexte_liste(
+            request,
+            vehicules,
+            session=session,
             message_succes=message_succes,
             message_erreur=message_erreur,
         ),

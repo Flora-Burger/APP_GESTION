@@ -8,11 +8,15 @@
     }
 
     body {
-        padding-bottom: calc(4.25rem + env(safe-area-inset-bottom, 0px));
+        padding-bottom: 0;
     }
 
     body.page-login {
         padding-bottom: 0;
+    }
+
+    body.menu-lateral-ouvert {
+        overflow: hidden;
     }
 
     img,
@@ -24,9 +28,39 @@
     /* En-tete compact */
     .en-tete {
         padding: 0.65rem 0.75rem;
-        grid-template-columns: auto 1fr;
+        grid-template-columns: 2.75rem 1fr 2.75rem;
         gap: 0.45rem;
         max-width: 100%;
+    }
+
+    .btn-menu-lateral {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 2.5rem;
+        height: 2.5rem;
+        padding: 0;
+        border: 1px solid rgba(255, 255, 255, 0.35);
+        border-radius: 6px;
+        background: transparent;
+        color: white;
+        cursor: pointer;
+        grid-column: 1;
+        justify-self: start;
+    }
+
+    .btn-menu-lateral svg {
+        width: 1.35rem;
+        height: 1.35rem;
+    }
+
+    .btn-menu-lateral:active {
+        background: rgba(255, 255, 255, 0.15);
+    }
+
+    .en-tete > a {
+        grid-column: 2;
+        justify-self: center;
     }
 
     .en-tete-logo {
@@ -43,14 +77,12 @@
         justify-self: end;
     }
 
-    .en-tete-utilisateur {
+    .en-tete-nav {
         display: none;
     }
 
-    .en-tete-lien {
-        font-size: 0.6rem;
-        padding: 0.4rem 0.4rem;
-        letter-spacing: 0.02em;
+    .en-tete-utilisateur {
+        display: none;
     }
 
     /* Contenu principal */
@@ -75,23 +107,180 @@
         font-size: 0.88rem;
     }
 
-    /* Accueil sans debordement */
+    /* Accueil : hero masque sur mobile (recherche + tableau de bord admin) */
     .page-accueil .conteneur {
-        padding-top: 0;
+        padding-top: 1rem;
     }
 
     .page-accueil .accueil-hero {
-        margin-left: 0;
-        margin-right: 0;
-        padding: 2rem 0.75rem 1.75rem;
+        display: none;
+    }
+
+    .page-accueil .accueil-recherche {
+        margin-top: 0;
     }
 
     /* Grilles et cartes compactes */
     .grille-modules,
-    .grille-tableau-bord,
-    .grille-vehicules {
+    .grille-tableau-bord {
         grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 0.55rem;
+    }
+
+    .page-vehicules-liste .grille-vehicules,
+    .page-vehicules-utilisateur .grille-vehicules,
+    .page-vehicules-utilisateur .compteur-resultats {
+        max-width: 100%;
+    }
+
+    .page-vehicules-liste .entete-page-vehicules,
+    .page-vehicules-utilisateur .entete-page-vehicules {
+        justify-content: flex-start;
+    }
+
+    .page-vehicules-liste .entete-page-vehicules .titre-page,
+    .page-vehicules-utilisateur .entete-page-vehicules .titre-page {
+        text-align: left;
+    }
+
+    .page-vehicules-liste .vehicule-infos-flotte,
+    .page-vehicules-utilisateur .vehicule-infos-flotte {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.55rem;
+        width: 100%;
+        max-width: 100%;
+    }
+
+    .page-vehicules-liste .carte-vehicule:not(.carte-ordinateur):not(.carte-imprimante),
+    .page-vehicules-utilisateur .carte-vehicule:not(.carte-ordinateur):not(.carte-imprimante) {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .page-vehicules-liste .carte-vehicule:not(.carte-ordinateur):not(.carte-imprimante) .carte-vehicule-photo,
+    .page-vehicules-utilisateur .carte-vehicule:not(.carte-ordinateur):not(.carte-imprimante) .carte-vehicule-photo {
+        display: block;
+        width: 100%;
+        height: 10rem;
+        margin: 0;
+        border-radius: 0;
+        overflow: hidden;
+        background: #e8ecea;
+    }
+
+    .page-vehicules-liste .carte-vehicule:not(.carte-ordinateur):not(.carte-imprimante) .carte-vehicule-photo img,
+    .page-vehicules-utilisateur .carte-vehicule:not(.carte-ordinateur):not(.carte-imprimante) .carte-vehicule-photo img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .page-vehicules-liste .carte-vehicule:not(.carte-ordinateur):not(.carte-imprimante) .carte-vehicule-entete,
+    .page-vehicules-utilisateur .carte-vehicule:not(.carte-ordinateur):not(.carte-imprimante) .carte-vehicule-entete {
+        padding: 0.5rem 0.6rem 0;
+    }
+
+    .page-imprimantes-liste .grille-vehicules,
+    .page-ordinateurs-liste .grille-vehicules {
+        grid-template-columns: minmax(0, 1fr);
+        width: 100%;
+    }
+
+    .page-imprimantes-liste .carte-imprimante,
+    .page-ordinateurs-liste .carte-ordinateur {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+    }
+
+    .page-vehicules-liste .grille-vehicules {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+    }
+
+    .page-vehicules-liste:not(.page-vehicules-utilisateur) .carte-vehicule-donnees-jour-bureau {
+        display: none;
+    }
+
+    .page-vehicules-liste:not(.page-vehicules-utilisateur) .carte-vehicule-compact .carte-vehicule-compact-haut {
+        display: flex;
+        gap: 0.65rem;
+        align-items: flex-start;
+        padding: 0.5rem 0.6rem 0;
+    }
+
+    .page-vehicules-liste:not(.page-vehicules-utilisateur) .carte-vehicule-compact .carte-vehicule-photo {
+        display: block;
+        width: 4.5rem;
+        height: 3.25rem;
+        margin: 0;
+        border-radius: 6px;
+        overflow: hidden;
+        background: #e8ecea;
+        flex-shrink: 0;
+    }
+
+    .page-vehicules-liste:not(.page-vehicules-utilisateur) .carte-vehicule-compact .carte-vehicule-photo img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .page-vehicules-liste:not(.page-vehicules-utilisateur) .carte-vehicule-compact .carte-vehicule-entete {
+        flex: 1;
+        min-width: 0;
+        padding: 0;
+    }
+
+    .page-vehicules-liste:not(.page-vehicules-utilisateur) .carte-vehicule-compact .carte-vehicule-corps {
+        padding: 0.45rem 0.6rem;
+    }
+
+    .page-vehicules-liste:not(.page-vehicules-utilisateur) .carte-vehicule-compact .champ-info {
+        padding: 0.18rem 0;
+        font-size: 0.82rem;
+    }
+
+    .page-vehicules-liste:not(.page-vehicules-utilisateur) .carte-vehicule-donnees-jour {
+        margin-top: 0.35rem;
+    }
+
+    .page-vehicules-liste:not(.page-vehicules-utilisateur) .carte-vehicule-donnees-jour .carte-vehicule-details-summary {
+        padding: 0.45rem 0.65rem;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+
+    .page-vehicules-liste:not(.page-vehicules-utilisateur) .carte-vehicule-donnees-jour .carte-vehicule-details-contenu {
+        padding: 0.35rem 0.65rem 0.5rem;
+    }
+
+    .page-vehicules-liste:not(.page-vehicules-utilisateur) .carte-vehicule-donnees-jour .carte-vehicule-details-contenu .champ-info:last-child {
+        border-bottom: none;
+    }
+
+    .page-vehicules-liste:not(.page-vehicules-utilisateur) .carte-vehicule-compact .carte-vehicule-actions {
+        padding: 0.5rem 0.6rem;
+        gap: 0.35rem;
+    }
+
+    .page-vehicules-liste:not(.page-vehicules-utilisateur) .carte-vehicule-compact .carte-vehicule-actions .btn {
+        font-size: 0.8rem;
+        padding: 0.35rem 0.6rem;
+    }
+
+    .page-vehicules-liste .vehicule-infos-flotte {
+        margin-top: 1rem;
+        padding-top: 1rem;
+    }
+
+    .page-vehicules-liste .vehicule-infos-flotte .taller-ciudad-titre {
+        margin-top: 0.75rem;
+    }
+
+    .page-vehicules-liste .vehicule-infos-flotte .taller-ciudad-titre:first-child {
+        margin-top: 0;
     }
 
     .compteur-resultats {
@@ -142,41 +331,20 @@
 
     .carte-vehicule {
         overflow: hidden;
-        display: grid;
-        grid-template-columns: 3.25rem 1fr;
-        column-gap: 0.75rem;
-        grid-template-areas:
-            "photo entete"
-            "corps corps"
-            "actions actions";
     }
 
-    .carte-vehicule-photo {
-        display: block;
-        grid-area: photo;
-        width: 3.25rem;
-        height: 2.45rem;
-        margin: 0.5rem 0 0 0.6rem;
-        border-radius: 4px;
-        overflow: hidden;
-        background: #e8ecea;
-        flex-shrink: 0;
-    }
-
-    .carte-vehicule-photo img {
-        width: 100%;
-        height: 100%;
-        max-width: none;
-        object-fit: cover;
+    .carte-ordinateur,
+    .carte-imprimante {
+        display: flex;
+        flex-direction: column;
     }
 
     .carte-vehicule-entete {
-        grid-area: entete;
         flex-direction: row;
         align-items: flex-start;
         justify-content: space-between;
         gap: 0.35rem;
-        padding: 0.5rem 0.6rem 0 0.15rem;
+        padding: 0.5rem 0.6rem 0;
     }
 
     .carte-vehicule-entete h3 {
@@ -278,6 +446,93 @@
         height: 0.75rem;
     }
 
+    /* Etats lisibles sur les cartes (texte, pas pastilles) */
+    .page-vehicules-liste .carte-vehicule:not(.carte-ordinateur):not(.carte-imprimante) .carte-vehicule-entete-statut .badge-statut,
+    .page-vehicules-liste .carte-vehicule:not(.carte-ordinateur):not(.carte-imprimante) .carte-vehicule-entete-statut .badge-statut-cliquable,
+    .page-imprimantes-liste .carte-imprimante .carte-vehicule-entete-statut .badge-statut,
+    .page-imprimantes-liste .carte-imprimante .carte-vehicule-entete-statut .badge-statut-cliquable,
+    .page-ordinateurs-liste .carte-ordinateur .carte-vehicule-entete-statut .badge-statut,
+    .page-ordinateurs-liste .carte-ordinateur .carte-vehicule-entete-statut .badge-statut-cliquable {
+        width: auto;
+        height: auto;
+        min-width: 0;
+        min-height: 0;
+        padding: 0.2rem 0.55rem;
+        border-radius: 10px;
+        border: none;
+        font-size: 0.74rem;
+        font-weight: 600;
+        line-height: 1.2;
+        color: inherit;
+        overflow: visible;
+        box-shadow: none;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        text-decoration: underline;
+        text-underline-offset: 2px;
+    }
+
+    .page-vehicules-liste .carte-vehicule:not(.carte-ordinateur):not(.carte-imprimante) .carte-vehicule-entete-statut .badge-statut-texte,
+    .page-imprimantes-liste .carte-imprimante .carte-vehicule-entete-statut .badge-statut-texte,
+    .page-ordinateurs-liste .carte-ordinateur .carte-vehicule-entete-statut .badge-statut-texte {
+        font-size: 0.74rem;
+        line-height: 1.2;
+        color: inherit;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+    }
+
+    .page-vehicules-liste .carte-vehicule:not(.carte-ordinateur):not(.carte-imprimante) .carte-vehicule-entete-statut .badge-libre,
+    .page-vehicules-liste .carte-vehicule:not(.carte-ordinateur):not(.carte-imprimante) .carte-vehicule-entete-statut .badge-disponible,
+    .page-vehicules-liste .carte-vehicule:not(.carte-ordinateur):not(.carte-imprimante) .carte-vehicule-entete-statut .badge-ok,
+    .page-imprimantes-liste .carte-imprimante .carte-vehicule-entete-statut .badge-libre,
+    .page-imprimantes-liste .carte-imprimante .carte-vehicule-entete-statut .badge-ok,
+    .page-ordinateurs-liste .carte-ordinateur .carte-vehicule-entete-statut .badge-libre,
+    .page-ordinateurs-liste .carte-ordinateur .carte-vehicule-entete-statut .badge-ok {
+        background: var(--badge-ok-fond);
+        color: var(--badge-ok-texte);
+    }
+
+    .page-vehicules-liste .carte-vehicule:not(.carte-ordinateur):not(.carte-imprimante) .carte-vehicule-entete-statut .badge-occupe,
+    .page-vehicules-liste .carte-vehicule:not(.carte-ordinateur):not(.carte-imprimante) .carte-vehicule-entete-statut .badge-panne,
+    .page-imprimantes-liste .carte-imprimante .carte-vehicule-entete-statut .badge-occupe,
+    .page-imprimantes-liste .carte-imprimante .carte-vehicule-entete-statut .badge-panne,
+    .page-ordinateurs-liste .carte-ordinateur .carte-vehicule-entete-statut .badge-occupe,
+    .page-ordinateurs-liste .carte-ordinateur .carte-vehicule-entete-statut .badge-panne {
+        background: var(--badge-panne-fond);
+        color: var(--badge-panne-texte);
+    }
+
+    .page-vehicules-liste .carte-vehicule:not(.carte-ordinateur):not(.carte-imprimante) .carte-vehicule-entete-statut .badge-maintenance,
+    .page-vehicules-liste .carte-vehicule:not(.carte-ordinateur):not(.carte-imprimante) .carte-vehicule-entete-statut .badge-au-garage,
+    .page-imprimantes-liste .carte-imprimante .carte-vehicule-entete-statut .badge-maintenance,
+    .page-ordinateurs-liste .carte-ordinateur .carte-vehicule-entete-statut .badge-maintenance {
+        background: var(--badge-maintenance-fond);
+        color: var(--badge-maintenance-texte);
+    }
+
+    .page-vehicules-liste .carte-statut-groupe .badge-au-garage {
+        display: inline-flex;
+    }
+
+    .page-vehicules-liste .carte-statut-groupe {
+        gap: 0.35rem;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+    }
+
+    .page-vehicules-liste .btn-info-statut {
+        width: 1.75rem;
+        height: 1.75rem;
+        min-width: 1.75rem;
+        min-height: 1.75rem;
+    }
+
+    .page-vehicules-liste .btn-info-statut svg {
+        width: 0.9rem;
+        height: 0.9rem;
+    }
+
     /* ITV : badge texte comme sur bureau */
     .champ-info-itv .badge-itv {
         display: inline-block;
@@ -336,8 +591,50 @@
     }
 
     .carte-vehicule-corps {
-        grid-area: corps;
         padding: 0.3rem 0.6rem 0.45rem;
+    }
+
+    .page-vehicules-liste .carte-vehicule:not(.carte-ordinateur):not(.carte-imprimante) .carte-vehicule-corps,
+    .page-imprimantes-liste .carte-imprimante .carte-vehicule-corps,
+    .page-ordinateurs-liste .carte-ordinateur .carte-vehicule-corps {
+        padding: 0.55rem 0.75rem 0.65rem;
+    }
+
+    .page-vehicules-liste .carte-vehicule:not(.carte-ordinateur):not(.carte-imprimante) .champ-info,
+    .page-imprimantes-liste .carte-imprimante .champ-info,
+    .page-ordinateurs-liste .carte-ordinateur .champ-info {
+        font-size: 0.82rem;
+        padding: 0.2rem 0;
+    }
+
+    .page-vehicules-liste .carte-vehicule:not(.carte-ordinateur):not(.carte-imprimante) .champ-label,
+    .page-imprimantes-liste .carte-imprimante .champ-label,
+    .page-ordinateurs-liste .carte-ordinateur .champ-label {
+        font-size: 0.8rem;
+    }
+
+    .page-ordinateurs-liste .carte-ordinateur .details-licences-minimal-summary {
+        font-size: 0.8rem;
+    }
+
+    .page-vehicules-liste .carte-vehicule:not(.carte-ordinateur):not(.carte-imprimante) .champ-valeur,
+    .page-imprimantes-liste .carte-imprimante .champ-valeur,
+    .page-ordinateurs-liste .carte-ordinateur .champ-valeur {
+        font-size: 0.82rem;
+    }
+
+    .page-vehicules-liste .carte-vehicule:not(.carte-ordinateur):not(.carte-imprimante) .carte-vehicule-entete h3,
+    .page-imprimantes-liste .carte-imprimante .carte-vehicule-entete h3,
+    .page-ordinateurs-liste .carte-ordinateur .carte-vehicule-entete h3 {
+        font-size: 0.92rem;
+    }
+
+    .page-vehicules-liste .carte-vehicule:not(.carte-ordinateur):not(.carte-imprimante) .itv-date {
+        font-size: 0.72rem;
+    }
+
+    .page-vehicules-liste .carte-vehicule:not(.carte-ordinateur):not(.carte-imprimante) .badge-itv {
+        font-size: 0.78rem;
     }
 
     .champ-info {
@@ -389,11 +686,14 @@
     }
 
     .carte-vehicule-actions {
-        grid-area: actions;
         display: flex;
         flex-direction: column;
         gap: 0.3rem;
         padding: 0.4rem 0.6rem;
+    }
+
+    .carte-vehicule:not(.carte-ordinateur):not(.carte-imprimante) .carte-vehicule-actions {
+        grid-area: actions;
     }
 
     .carte-vehicule-actions .btn {
@@ -483,125 +783,6 @@
     .groupe-filtre select,
     .groupe-filtre input[type="date"] {
         font-size: 16px;
-    }
-
-    /* Leyenda de estados */
-    .legende-statuts {
-        display: block;
-        margin-bottom: 0.75rem;
-        background: var(--couleur-surface);
-        border: 1px solid var(--couleur-bordure);
-        border-radius: var(--rayon);
-        padding: 0.45rem 0.65rem;
-        font-size: 0.72rem;
-    }
-
-    .legende-statuts-titre {
-        cursor: pointer;
-        font-weight: 600;
-        color: var(--couleur-primaire-fonce);
-        list-style: none;
-    }
-
-    .legende-statuts-titre::-webkit-details-marker {
-        display: none;
-    }
-
-    .legende-statuts-liste {
-        list-style: none;
-        margin: 0.55rem 0 0;
-        padding: 0;
-        display: flex;
-        flex-direction: column;
-        gap: 0.45rem;
-    }
-
-    .legende-statuts-item {
-        display: flex;
-        align-items: center;
-        gap: 0.55rem;
-        color: var(--couleur-texte-leger);
-        line-height: 1.3;
-    }
-
-    .legende-statuts-pastille {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 0.92rem;
-        height: 0.92rem;
-        min-width: 0.92rem;
-        border-radius: 50%;
-        border: 2px solid rgba(255, 255, 255, 0.95);
-        box-shadow:
-            0 1px 4px rgba(15, 61, 122, 0.28),
-            inset 0 1px 2px rgba(255, 255, 255, 0.55);
-        flex-shrink: 0;
-    }
-
-    .legende-statuts-pastille-libre {
-        background: radial-gradient(circle at 32% 28%, #66bb6a 0%, var(--couleur-libre) 58%, #1b5e20 100%);
-    }
-
-    .legende-statuts-pastille-occupe {
-        background: radial-gradient(circle at 32% 28%, #ef5350 0%, var(--couleur-occupe) 58%, #8b1a1a 100%);
-    }
-
-    .legende-statuts-pastille-maintenance {
-        background: radial-gradient(circle at 32% 28%, #ffb74d 0%, var(--couleur-avertissement) 58%, #bf360c 100%);
-    }
-
-    .legende-statuts-pastille-info {
-        width: 1.1rem;
-        height: 1.1rem;
-        min-width: 1.1rem;
-        border: 2px solid #f0c9a6;
-        background: #fff8f0;
-        color: var(--couleur-avertissement);
-        font-size: 0.62rem;
-        font-weight: 700;
-        font-style: italic;
-        box-shadow: 0 1px 4px rgba(230, 81, 0, 0.25);
-    }
-
-    /* Bandeau installation PWA */
-    .bandeau-installer-pwa:not([hidden]) {
-        display: block;
-        position: fixed;
-        left: 0.65rem;
-        right: 0.65rem;
-        bottom: calc(4.35rem + env(safe-area-inset-bottom, 0px));
-        z-index: 850;
-        background: var(--couleur-surface);
-        border: 1px solid var(--couleur-primaire);
-        border-radius: 8px;
-        box-shadow: 0 4px 20px rgba(15, 61, 122, 0.22);
-        padding: 0.75rem;
-    }
-
-    .bandeau-installer-pwa-titre {
-        margin: 0 0 0.35rem;
-        font-size: 0.85rem;
-        font-weight: 700;
-        color: var(--couleur-primaire-fonce);
-    }
-
-    .bandeau-installer-pwa-texte {
-        margin: 0 0 0.65rem;
-        font-size: 0.72rem;
-        color: var(--couleur-texte-leger);
-        line-height: 1.35;
-    }
-
-    .bandeau-installer-pwa-actions {
-        display: flex;
-        gap: 0.45rem;
-        flex-wrap: wrap;
-    }
-
-    .bandeau-installer-pwa-actions .btn {
-        flex: 1 1 auto;
-        min-height: 2.4rem;
     }
 
     /* Entetes de page */
@@ -785,6 +966,35 @@
         border-color: var(--couleur-bordure);
     }
 
+    .page-contacts-liste .tableau-historique-conteneur {
+        background: transparent;
+        box-shadow: none;
+        border-radius: 0;
+        padding: 0.65rem 0 1rem;
+    }
+
+    .page-contacts-liste .tableau-historique tbody {
+        gap: 1rem;
+    }
+
+    .page-contacts-liste .tableau-historique tr {
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(15, 61, 122, 0.06);
+    }
+
+    .page-contacts-liste .tableau-historique td {
+        padding: 0.55rem 0.75rem;
+    }
+
+    .page-contacts-liste .historique-section-titre {
+        margin-top: 1.35rem;
+        margin-bottom: 0.85rem;
+    }
+
+    .page-contacts-liste .historique-section-titre:first-of-type {
+        margin-top: 0.75rem;
+    }
+
     .historique-ligne-commentaire td {
         display: block;
         text-align: left;
@@ -853,84 +1063,140 @@
         width: min(100%, 220px);
     }
 
-    /* Navigation mobile basse */
-    .nav-mobile {
-        display: flex;
+    /* Menu lateral */
+    .menu-lateral {
+        display: block;
+        position: fixed;
+        inset: 0;
+        z-index: 950;
+        pointer-events: none;
+        visibility: hidden;
     }
-}
 
-/* Masquee sur bureau */
-.nav-mobile {
-    display: none;
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 900;
-    background: var(--couleur-surface);
-    border-top: 2px solid var(--couleur-primaire-fonce);
-    padding: 0.35rem 0.25rem calc(0.35rem + env(safe-area-inset-bottom, 0px));
-    box-shadow: 0 -4px 16px rgba(15, 61, 122, 0.12);
-    max-width: 100%;
-}
+    body.menu-lateral-ouvert .menu-lateral {
+        pointer-events: auto;
+        visibility: visible;
+    }
 
-.nav-mobile-liste {
-    display: flex;
-    align-items: stretch;
-    justify-content: space-around;
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    width: 100%;
-}
+    .menu-lateral-fond {
+        position: absolute;
+        inset: 0;
+        background: rgba(15, 61, 122, 0.45);
+        opacity: 0;
+        transition: opacity 0.2s ease;
+    }
 
-.nav-mobile-item {
-    flex: 1;
-    min-width: 0;
-}
+    body.menu-lateral-ouvert .menu-lateral-fond {
+        opacity: 1;
+    }
 
-.nav-mobile-lien {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 0.2rem;
-    padding: 0.35rem 0.1rem;
-    color: var(--couleur-texte-leger);
-    text-decoration: none;
-    font-size: 0.58rem;
-    font-weight: 600;
-    line-height: 1.15;
-    text-align: center;
-    border-radius: 6px;
-    min-height: 3.25rem;
-}
+    .menu-lateral-panneau {
+        position: absolute;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        width: min(18.5rem, 88vw);
+        max-width: 100%;
+        background: var(--couleur-surface);
+        border-right: 1px solid var(--couleur-bordure);
+        box-shadow: 4px 0 24px rgba(15, 61, 122, 0.18);
+        transform: translateX(-100%);
+        transition: transform 0.22s ease;
+        display: flex;
+        flex-direction: column;
+        padding: calc(0.85rem + env(safe-area-inset-top, 0px)) 0 calc(0.85rem + env(safe-area-inset-bottom, 0px));
+        overflow-y: auto;
+    }
 
-.nav-mobile-lien:hover {
-    text-decoration: none;
-    color: var(--couleur-primaire);
-}
+    body.menu-lateral-ouvert .menu-lateral-panneau {
+        transform: translateX(0);
+    }
 
-.nav-mobile-lien.actif {
-    color: var(--couleur-primaire-fonce);
-    background: var(--couleur-primaire-clair);
-}
+    .menu-lateral-entete {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        padding: 0 1rem 0.85rem;
+        border-bottom: 1px solid var(--couleur-bordure);
+        margin-bottom: 0.5rem;
+    }
 
-.nav-mobile-icone {
-    width: 1.35rem;
-    height: 1.35rem;
-    flex-shrink: 0;
-}
+    .menu-lateral-utilisateur {
+        margin: 0;
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: var(--couleur-primaire-fonce);
+        line-height: 1.3;
+        word-break: break-word;
+    }
 
-.nav-mobile-lien .carte-module-icone {
-    width: 1.35rem;
-    height: 1.35rem;
-}
+    .btn-fermer-menu-lateral {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 2.25rem;
+        height: 2.25rem;
+        padding: 0;
+        border: 1px solid var(--couleur-bordure);
+        border-radius: 6px;
+        background: var(--couleur-fond);
+        color: var(--couleur-texte);
+        font-size: 1.35rem;
+        line-height: 1;
+        cursor: pointer;
+        flex-shrink: 0;
+    }
 
-.nav-mobile-libelle {
-    display: block;
-    max-width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    .menu-lateral-liste {
+        list-style: none;
+        margin: 0;
+        padding: 0.35rem 0.65rem;
+    }
+
+    .menu-lateral-liste > li {
+        margin: 0;
+    }
+
+    .menu-lateral-separateur {
+        height: 1px;
+        margin: 0.5rem 0.75rem;
+        background: var(--couleur-bordure);
+    }
+
+    .menu-lateral-lien {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.75rem 0.85rem;
+        border-radius: 8px;
+        color: var(--couleur-texte);
+        text-decoration: none;
+        font-size: 0.95rem;
+        font-weight: 600;
+        line-height: 1.25;
+        min-height: 2.85rem;
+    }
+
+    .menu-lateral-lien:hover {
+        text-decoration: none;
+        background: var(--couleur-primaire-clair);
+        color: var(--couleur-primaire-fonce);
+    }
+
+    .menu-lateral-lien.actif {
+        background: var(--couleur-primaire-clair);
+        color: var(--couleur-primaire-fonce);
+    }
+
+    .menu-lateral-lien-deconnexion {
+        color: var(--couleur-occupe);
+    }
+
+    .menu-lateral-icone,
+    .menu-lateral-lien .carte-module-icone {
+        width: 1.35rem;
+        height: 1.35rem;
+        flex-shrink: 0;
+    }
 }

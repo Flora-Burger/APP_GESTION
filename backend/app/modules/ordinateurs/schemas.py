@@ -5,6 +5,8 @@ from enum import Enum
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from backend.app.modules.ordinateurs.donnees_json import LicenceLogiciel
+
 
 class StatutOrdinateur(str, Enum):
     """Etat operationnel d'un ordinateur."""
@@ -15,13 +17,10 @@ class StatutOrdinateur(str, Enum):
 
 
 class TypeEvenement(str, Enum):
-    """Types d'evenements historiques."""
+    """Types d'evenements historiques (admin)."""
 
-    CHANGEMENT_UTILISATEUR = "changement_utilisateur"
     ENTRETIEN = "entretien"
-    MAINTENANCE_TERMINEE = "maintenance_terminee"
     INTERVENTION_TECHNIQUE = "intervention_technique"
-    PANNE = "panne"
 
 
 class FiltreStatutOrdinateur(str, Enum):
@@ -59,7 +58,6 @@ class EvenementCreate(BaseModel):
     date_evenement: date
     type_evenement: TypeEvenement
     commentaire: str | None = Field(default=None, max_length=500)
-    utilisateur_responsable: str | None = Field(default=None, max_length=150)
 
 
 class EvenementResponse(BaseModel):
@@ -94,6 +92,8 @@ class OrdinateurResponse(BaseModel):
     capacite_stockage: str | None
     date_acquisition: date | None
     garantie: str | None
+    facture_url: str | None = None
+    licences: list[LicenceLogiciel] = []
     cree_le: datetime
 
 

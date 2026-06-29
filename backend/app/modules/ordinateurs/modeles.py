@@ -28,6 +28,8 @@ class Ordinateur(Base):
     capacite_stockage: Mapped[str | None] = mapped_column(String(100), nullable=True)
     date_acquisition: Mapped[date | None] = mapped_column(Date, nullable=True)
     garantie: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    facture_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    licences: Mapped[str | None] = mapped_column(Text, nullable=True)
     cree_le: Mapped[datetime] = mapped_column(
         DateTime, nullable=False, default=datetime.utcnow
     )

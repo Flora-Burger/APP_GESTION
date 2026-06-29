@@ -3,6 +3,7 @@
 import re
 
 _IDENTIFIANT_VALIDE = re.compile(r"^\d{3}$")
+ID_UTILISATEUR_LIBRE = "000"
 
 
 def normaliser_identifiant(valeur: str) -> str:

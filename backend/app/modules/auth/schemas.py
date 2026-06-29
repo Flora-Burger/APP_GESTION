@@ -21,6 +21,8 @@ class UtilisateurCreate(BaseModel):
     email: str = Field(min_length=3, max_length=3)
     mot_de_passe: str = Field(min_length=3, max_length=128)
     nom: str = Field(min_length=1, max_length=200)
+    telefono: str | None = Field(default=None, max_length=30)
+    correo: str | None = Field(default=None, max_length=255)
     role: RoleUtilisateur = RoleUtilisateur.USER
 
     @field_validator("email", mode="before")
@@ -46,6 +48,8 @@ class UtilisateurUpdate(BaseModel):
 
     email: str = Field(min_length=3, max_length=3)
     nom: str = Field(min_length=1, max_length=200)
+    telefono: str | None = Field(default=None, max_length=30)
+    correo: str | None = Field(default=None, max_length=255)
     mot_de_passe: str | None = Field(default=None, min_length=3, max_length=128)
     role: RoleUtilisateur
 
@@ -85,6 +89,8 @@ class UtilisateurResponse(BaseModel):
     id: int
     email: str
     nom: str | None
+    telefono: str | None
+    correo: str | None
     role: RoleUtilisateur
     est_actif: bool
     cree_le: datetime

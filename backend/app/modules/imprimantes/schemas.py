@@ -3,7 +3,7 @@
 from datetime import date, datetime
 from enum import Enum
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class StatutImprimante(str, Enum):
@@ -15,13 +15,9 @@ class StatutImprimante(str, Enum):
 
 
 class TypeEvenement(str, Enum):
-    """Types d'evenements historiques."""
+    """Types d'evenements historiques (admin)."""
 
-    COMPTEUR = "compteur"
     TONER = "toner"
-    MAINTENANCE = "maintenance"
-    MAINTENANCE_TERMINEE = "maintenance_terminee"
-    PANNE = "panne"
     REPARATION = "reparation"
 
 
@@ -43,11 +39,13 @@ class ImprimanteCreate(BaseModel):
 
 
 class ImprimanteUpdate(BaseModel):
-    """Modification des donnees maitres (statut deduit des evenements)."""
+    """Modification des donnees maitres."""
 
     nom: str = Field(..., max_length=100)
     modele: str = Field(..., max_length=150)
     localisation: str = Field(..., max_length=200)
+    fecha_compra: date | None = None
+    tipo_tinta: str | None = Field(default=None, max_length=100)
 
 
 class EvenementCreate(BaseModel):
@@ -55,15 +53,7 @@ class EvenementCreate(BaseModel):
 
     date_evenement: date
     type_evenement: TypeEvenement
-    compteur_pages: int | None = Field(default=None, ge=0)
     commentaire: str | None = Field(default=None, max_length=500)
-
-    @model_validator(mode="after")
-    def valider_compteur_obligatoire(self) -> "EvenementCreate":
-        """Le compteur est obligatoire pour une mise a jour compteur."""
-        if self.type_evenement == TypeEvenement.COMPTEUR and self.compteur_pages is None:
-            raise ValueError("compteur_obligatoire")
-        return self
 
 
 class EvenementResponse(BaseModel):
@@ -74,7 +64,7 @@ class EvenementResponse(BaseModel):
     id: int
     imprimante_id: int
     date_evenement: date
-    type_evenement: TypeEvenement
+    type_evenement: str
     compteur_pages: int | None
     commentaire: str | None
 
@@ -92,6 +82,9 @@ class ImprimanteResponse(BaseModel):
     compteur_pages: int
     date_dernier_toner: date | None
     date_derniere_maintenance: date | None
+    fecha_compra: date | None = None
+    facture_url: str | None = None
+    tipo_tinta: str | None = None
     cree_le: datetime
 
 

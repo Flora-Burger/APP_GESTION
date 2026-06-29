@@ -105,9 +105,8 @@ La page d'accueil (`/`) applique la classe `page-accueil` pour le hero (logo, no
 L'application conserve la meme version sur ordinateur et mobile (une seule base de code). Sur ecrans <= 768px uniquement (`static/css/mobile.css`) :
 
 - Filtres repliables via le bouton **Filtros** (`partials/bouton_ouvrir_filtres.html`).
-- Pastilles colorees pour les etats sur les cartes ; **leyenda** repliable (`partials/legende_statuts.html`) sur les listes.
-- Boutons d'action des cartes vehicules agrandis pour le tactile.
-- **PWA** : `manifest.webmanifest`, `static/sw.js`, icones `static/pwa/`, bandeau d'installation (`partials/bandeau_installer_pwa.html`). Routes dans `backend/app/core/router_pwa.py`.
+- Badges de statut lisibles (texte colore) sur les cartes vehicules, imprimantes et ordinateurs.
+- Menu lateral (hamburger) : accueil, modules, contacts ou admin, deconnexion.
 
 Le bureau n'est pas modifie : les regles mobile sont isolees dans `mobile.css` ; `style.css` conserve la mise en page ordinateur d'origine.
 

@@ -6,6 +6,7 @@ from enum import Enum
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from backend.app.modules.vehicules.donnees_json import ContactoSeguro, TallerReferencia
 
 class StatutVehicule(str, Enum):
     """Statut calcule libre/occupe (filtres et compatibilite API)."""
@@ -17,6 +18,7 @@ class StatutVehicule(str, Enum):
 class StatutAffichageVehicule(str, Enum):
     """Statut affiche sur la fiche vehicule."""
 
+    OK = "ok"
     DISPONIBLE = "disponible"
     OCCUPE = "occupe"
     NO_DISPONIBLE = "no_disponible"
@@ -98,6 +100,7 @@ class VehiculeCreateAdmin(BaseModel):
     matricule: str = Field(..., max_length=20)
     modele: str = Field(..., max_length=100)
     kilometrage_actuel: int = Field(..., ge=0)
+    utilisateur_assigne: str | None = Field(default=None, max_length=200)
 
 
 class VehiculeUpdateAdmin(BaseModel):
@@ -105,6 +108,23 @@ class VehiculeUpdateAdmin(BaseModel):
 
     matricule: str = Field(..., max_length=20)
     modele: str = Field(..., max_length=100)
+    utilisateur_assigne: str | None = Field(default=None, max_length=200)
+
+
+class ConfigurationVehiculesUpdate(BaseModel):
+    """Mise a jour de la configuration globale seguro / talleres."""
+
+    seguro_compania: str | None = Field(default=None, max_length=200)
+    seguro_poliza: str | None = Field(default=None, max_length=100)
+
+
+class ConfigurationVehiculesResponse(BaseModel):
+    """Configuration globale affichee sur toutes les fiches vehicule."""
+
+    seguro_compania: str | None = None
+    seguro_poliza: str | None = None
+    seguro_contactos: list[ContactoSeguro] = []
+    talleres_referencia: list[TallerReferencia] = []
 
 
 class VehiculeJournalBase(BaseModel):
@@ -225,6 +245,11 @@ class VehiculeResponse(VehiculeBase):
     cout_carburant_jour_aujourdhui: Decimal = Decimal("0.00")
     consommation_session_aujourdhui: Decimal = Decimal("0.00")
     cout_session_aujourdhui: Decimal = Decimal("0.00")
+    utilisateur_assigne: str | None = None
+    seguro_compania: str | None = None
+    seguro_poliza: str | None = None
+    seguro_contactos: list[ContactoSeguro] = []
+    talleres_referencia: list[TallerReferencia] = []
 
 
 class VehiculeDetailResponse(VehiculeResponse):

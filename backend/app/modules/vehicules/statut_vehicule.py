@@ -39,6 +39,8 @@ def calculer_statut_affichage(
     reference = jour or date.today()
     if calculer_statut_itv(vehicule.date_expiration_itv, reference) == StatutItv.EXPIREE:
         return StatutAffichageVehicule.NO_DISPONIBLE
+    if vehicule.utilisateur_assigne and vehicule.utilisateur_assigne.strip():
+        return StatutAffichageVehicule.OK
     statut = calculer_statut(utilisateur)
     if statut == StatutVehicule.LIBRE:
         return StatutAffichageVehicule.DISPONIBLE

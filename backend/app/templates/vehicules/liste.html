@@ -1,18 +1,19 @@
 {% extends "base.html" %}
 
-{% block titre %}{{ t.vehicules }}{% endblock %}
+{% block titre %}{% if est_admin %}{{ t.vehicules_titre }}{% else %}{{ t.mis_vehiculos }}{% endif %}{% endblock %}
+{% block body_class %}page-vehicules-liste{% if not est_admin %} page-vehicules-utilisateur{% endif %}{% endblock %}
 
 {% block contenu %}
-{% include "partials/lien_retour_accueil.html" %}
 <div class="entete-page-vehicules">
     <div>
-        <h1 class="titre-page">{{ t.vehicules_titre }}</h1>
+        <h1 class="titre-page">{% if est_admin %}{{ t.vehicules_titre }}{% else %}{{ t.mis_vehiculos }}{% endif %}</h1>
     </div>
     {% if est_admin %}
     <a href="/admin/vehicules" class="btn btn-secondaire btn-admin-vehicules">{{ t.admin_vehicules }}</a>
     {% endif %}
 </div>
 
+{% if est_admin %}
 <form
     id="form-filtres"
     class="barre-filtres"
@@ -60,42 +61,12 @@
     </div>
     </div>
 </form>
-
-{% include "partials/legende_statuts.html" %}
+{% else %}
+<form id="form-filtres" hidden aria-hidden="true"></form>
+{% endif %}
 
 <div id="liste-vehicules">
     {% include "vehicules/partials/liste_cartes.html" %}
-</div>
-
-<div id="modal-assigner" class="modal" hidden>
-    <div class="modal-fond" onclick="fermerModales()"></div>
-    <div class="modal-contenu" role="dialog" aria-modal="true" aria-labelledby="modal-assigner-titre">
-        <h3 id="modal-assigner-titre" class="modal-titre">{{ t.utiliser_ce_vehicule }}</h3>
-        <p id="modal-assigner-sous-titre" class="modal-sous-titre"></p>
-        <p class="modal-question">{{ t.question_utiliser_vehicule }}</p>
-        <p class="modal-utilisateur-courant">{{ t.utilisateur_assigne }}: <strong>{{ nom_utilisateur_courant }}</strong></p>
-        <form id="form-assigner" hx-post="" hx-target="#liste-vehicules" hx-swap="innerHTML" hx-include="#form-filtres">
-            <div class="modal-actions">
-                <button type="button" class="btn btn-secondaire" onclick="fermerModales()">{{ t.non }}</button>
-                <button type="submit" class="btn btn-primaire">{{ t.oui }}</button>
-            </div>
-        </form>
-    </div>
-</div>
-
-<div id="modal-liberer" class="modal" hidden>
-    <div class="modal-fond" onclick="fermerModales()"></div>
-    <div class="modal-contenu" role="dialog" aria-modal="true" aria-labelledby="modal-liberer-titre">
-        <h3 id="modal-liberer-titre" class="modal-titre">{{ t.liberer_ce_vehicule }}</h3>
-        <p id="modal-liberer-sous-titre" class="modal-sous-titre"></p>
-        <p class="modal-question">{{ t.question_liberer_vehicule }}</p>
-        <form id="form-liberer" hx-post="" hx-target="#liste-vehicules" hx-swap="innerHTML" hx-include="#form-filtres">
-            <div class="modal-actions">
-                <button type="button" class="btn btn-secondaire" onclick="fermerModales()">{{ t.non }}</button>
-                <button type="submit" class="btn btn-primaire">{{ t.oui }}</button>
-            </div>
-        </form>
-    </div>
 </div>
 
 <div id="modal-journal" class="modal" hidden>
@@ -263,6 +234,40 @@
     </div>
 </div>
 
+<div id="modal-assignation" class="modal" hidden>
+    <div class="modal-fond" onclick="fermerModales()"></div>
+    <div class="modal-contenu" role="dialog" aria-modal="true" aria-labelledby="modal-assignation-titre">
+        <h3 id="modal-assignation-titre" class="modal-titre">{{ t.modal_assignation_titre }}</h3>
+        <p id="modal-assignation-sous-titre" class="modal-sous-titre"></p>
+        <form
+            id="form-assignation"
+            hx-post=""
+            hx-target="#liste-vehicules"
+            hx-swap="innerHTML"
+            hx-include="#form-filtres"
+        >
+            <div class="champ-form">
+                <label for="assignation-utilisateur-id">{{ t.utilisateur_id }}</label>
+                <input
+                    type="text"
+                    id="assignation-utilisateur-id"
+                    name="utilisateur_id"
+                    inputmode="numeric"
+                    pattern="[0-9]{0,3}"
+                    maxlength="3"
+                    placeholder="{{ t.utilisateur_id_placeholder }}"
+                    title="{{ t.identifiant_format }}"
+                >
+                <p class="aide-champ">{{ t.utilisateur_id_aide }}</p>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondaire" onclick="fermerModales()">{{ t.annuler }}</button>
+                <button type="submit" class="btn btn-primaire">{{ t.confirmer }}</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <div id="modal-remise" class="modal" hidden>
     <div class="modal-fond" onclick="fermerModales()"></div>
     <div class="modal-contenu" role="dialog" aria-modal="true" aria-labelledby="modal-remise-titre">
@@ -303,36 +308,6 @@ function validerSoumissionJournal(event) {
         return false;
     }
     return validerCarburantJournal();
-}
-
-function ouvrirModalAssigner(bouton) {
-    const modal = document.getElementById('modal-assigner');
-    const form = document.getElementById('form-assigner');
-    const sousTitre = document.getElementById('modal-assigner-sous-titre');
-    if (!modal || !form || !bouton) {
-        return;
-    }
-    configurerFormulaireModal(form, '/vehicules/' + bouton.dataset.vehiculeId + '/assigner');
-    if (sousTitre) {
-        sousTitre.textContent = bouton.dataset.matricule || '';
-    }
-    modal.hidden = false;
-    document.body.classList.add('modal-ouverte');
-}
-
-function ouvrirModalLiberer(bouton) {
-    const modal = document.getElementById('modal-liberer');
-    const form = document.getElementById('form-liberer');
-    const sousTitre = document.getElementById('modal-liberer-sous-titre');
-    if (!modal || !form || !bouton) {
-        return;
-    }
-    configurerFormulaireModal(form, '/vehicules/' + bouton.dataset.vehiculeId + '/liberer');
-    if (sousTitre) {
-        sousTitre.textContent = bouton.dataset.matricule || '';
-    }
-    modal.hidden = false;
-    document.body.classList.add('modal-ouverte');
 }
 
 function ouvrirModalJournal(bouton) {
@@ -422,6 +397,27 @@ function ouvrirModalImmobilisation(bouton) {
         }
     }
 
+    modal.hidden = false;
+    document.body.classList.add('modal-ouverte');
+}
+
+function ouvrirModalAssignation(bouton) {
+    const modal = document.getElementById('modal-assignation');
+    const form = document.getElementById('form-assignation');
+    const sousTitre = document.getElementById('modal-assignation-sous-titre');
+    const champId = document.getElementById('assignation-utilisateur-id');
+    if (!modal || !form || !bouton) {
+        return;
+    }
+
+    configurerFormulaireModal(form, '/vehicules/' + bouton.dataset.vehiculeId + '/assignation');
+    if (sousTitre) {
+        sousTitre.textContent = bouton.dataset.matricule || '';
+    }
+    if (champId) {
+        champId.value = '';
+        champId.focus();
+    }
     modal.hidden = false;
     document.body.classList.add('modal-ouverte');
 }

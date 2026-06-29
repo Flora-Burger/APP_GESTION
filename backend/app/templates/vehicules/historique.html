@@ -10,9 +10,12 @@
         <img src="{{ vehicule.photo_url_affiche }}" alt="{{ vehicule.modele_affiche }}" class="historique-photo">
         {% endif %}
         <div>
-            <h2 class="titre-section">{{ t.historique_titre }}</h2>
-            <p class="sous-titre-page">{{ vehicule.matricule }} - {{ vehicule.modele_affiche }}</p>
-            <p class="historique-km-actuel">{{ t.kilometrage_actuel }}: <strong>{{ vehicule.kilometrage_actuel }} {{ t.km_unite }}</strong></p>
+            <h1 class="titre-page">{{ t.historique_titre }}</h1>
+            <p class="historique-resume-identite">{{ vehicule.matricule }} - {{ vehicule.modele_affiche }}</p>
+            <p class="historique-resume-info">
+                <span class="historique-resume-libelle">{{ t.kilometrage_actuel }}</span>
+                <span class="historique-resume-valeur">{{ vehicule.kilometrage_actuel }} {{ t.km_unite }}</span>
+            </p>
         </div>
     </div>
 </div>

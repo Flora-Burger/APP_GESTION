@@ -1,61 +1,208 @@
 {% extends "base.html" %}
 
+
+
 {% block titre %}{{ t.admin_imprimantes }}{% endblock %}
+
 {% block body_class %}page-admin-imprimantes{% endblock %}
 
+
+
 {% block contenu %}
+
 <p class="lien-retour">
+
     <a href="/imprimantes">{{ t.retour_liste }}</a>
+
 </p>
+
+
 
 <h1 class="titre-page">{{ t.admin_imprimantes }}</h1>
 
+
+
+<div class="admin-utilisateurs-actions">
+
+    <button type="button" class="btn btn-primaire" onclick="ouvrirModalCreerImprimante()">
+
+        {{ t.ajouter_imprimante }}
+
+    </button>
+
+</div>
+
+
+
 {% if message %}
+
 <div class="message message-succes">{{ t[message] }}</div>
+
 {% endif %}
+
 {% if erreur %}
+
 <div class="message message-erreur">{{ t[erreur] }}</div>
+
 {% endif %}
 
-<section class="admin-section">
-    <form method="post" action="/admin/imprimantes" class="formulaire-admin">
-        <div class="grille-form-admin">
-            <div class="champ-form">
-                <label for="nom">{{ t.nom_imprimante }}</label>
-                <input type="text" id="nom" name="nom" maxlength="100" required>
-            </div>
-            <div class="champ-form">
-                <label for="modele">{{ t.modele }}</label>
-                <input type="text" id="modele" name="modele" maxlength="150" required>
-            </div>
-            <div class="champ-form">
-                <label for="localisation">{{ t.localisation }}</label>
-                <input type="text" id="localisation" name="localisation" maxlength="200" required>
-            </div>
-            <div class="champ-form">
-                <label for="compteur_initial">{{ t.compteur_initial }}</label>
-                <input type="number" id="compteur_initial" name="compteur_initial" min="0" value="0">
-            </div>
-        </div>
-        <button type="submit" class="btn btn-primaire">{{ t.ajouter_imprimante }}</button>
-    </form>
-</section>
+
 
 <section class="admin-section">
+
     <h3>{{ t.liste_imprimantes_admin }}</h3>
+
     <form
+
         id="form-filtres"
+
         class="barre-filtres"
+
         hx-get="/admin/imprimantes/partials/liste"
+
         hx-target="#liste-admin-imprimantes"
+
         hx-trigger="input delay:300ms from:#form-filtres .champ-recherche, change from:#form-filtres select"
+
     >
+
         {% with recherche_id="recherche", recherche_name="recherche", recherche_placeholder=t.recherche_imprimantes_placeholder, recherche_valeur=filtres_actifs.recherche %}
+
         {% include "partials/champ_recherche.html" %}
+
         {% endwith %}
+
     </form>
+
     <div id="liste-admin-imprimantes">
+
         {% include "admin/partials/imprimantes_table.html" %}
+
     </div>
+
 </section>
+
+
+
+<div id="modal-creer-imprimante" class="modal" hidden>
+
+    <div class="modal-fond" onclick="fermerModales()"></div>
+
+    <div class="modal-contenu modal-contenu-large" role="dialog" aria-modal="true" aria-labelledby="modal-creer-imprimante-titre">
+
+        <h3 id="modal-creer-imprimante-titre" class="modal-titre">{{ t.ajouter_imprimante }}</h3>
+
+        <form id="form-creer-imprimante" method="post" action="/admin/imprimantes" class="formulaire-admin">
+
+            <div class="grille-form-admin">
+
+                <div class="champ-form">
+
+                    <label for="nom">{{ t.nom_imprimante }}</label>
+
+                    <input type="text" id="nom" name="nom" maxlength="100" required>
+
+                </div>
+
+                <div class="champ-form">
+
+                    <label for="modele">{{ t.modele }}</label>
+
+                    <input type="text" id="modele" name="modele" maxlength="150" required>
+
+                </div>
+
+                <div class="champ-form">
+
+                    <label for="localisation">{{ t.localisation }}</label>
+
+                    <input type="text" id="localisation" name="localisation" maxlength="200" required>
+
+                </div>
+
+            </div>
+
+            <div class="modal-actions">
+
+                <button type="button" class="btn btn-secondaire" onclick="fermerModales()">{{ t.annuler }}</button>
+
+                <button type="submit" class="btn btn-primaire">{{ t.ajouter_imprimante }}</button>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
 {% endblock %}
+
+
+
+{% block scripts %}
+
+<script>
+
+function ouvrirModalCreerImprimante() {
+
+    const modal = document.getElementById('modal-creer-imprimante');
+
+    if (!modal) {
+
+        return;
+
+    }
+
+    modal.hidden = false;
+
+    document.body.classList.add('modal-ouverte');
+
+    const premierChamp = document.getElementById('nom');
+
+    if (premierChamp) {
+
+        premierChamp.focus();
+
+    }
+
+}
+
+
+
+function fermerModales() {
+
+    document.querySelectorAll('.modal').forEach(function (modal) {
+
+        modal.hidden = true;
+
+    });
+
+    document.body.classList.remove('modal-ouverte');
+
+}
+
+
+
+document.addEventListener('keydown', function (event) {
+
+    if (event.key === 'Escape') {
+
+        fermerModales();
+
+    }
+
+});
+
+
+
+{% if erreur and erreur in ['nom_existant', 'erreur_creation_imprimante'] %}
+
+document.addEventListener('DOMContentLoaded', ouvrirModalCreerImprimante);
+
+{% endif %}
+
+</script>
+
+{% endblock %}
+

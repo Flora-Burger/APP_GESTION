@@ -5,12 +5,15 @@
 <div class="message message-erreur">{{ t[message_erreur] }}</div>
 {% endif %}
 
+{% if est_admin %}
 <p class="compteur-resultats">{{ vehicules|length }} {{ t.vehicules_count }}</p>
+{% endif %}
 
 {% if vehicules %}
 <div class="grille-vehicules">
     {% for v in vehicules %}
-    <article class="carte-vehicule">
+    <article class="carte-vehicule{% if est_admin %} carte-vehicule-compact{% endif %}">
+        <div class="carte-vehicule-compact-haut">
         <div class="carte-vehicule-photo">
             <img src="{{ v.photo_url_affiche }}" alt="{{ v.modele_affiche }}">
         </div>
@@ -23,28 +26,12 @@
                 </a>
             </div>
             <div class="carte-vehicule-entete-statut">
-                {% if v.statut_affichage.value == 'disponible' %}
-                <button
-                    type="button"
-                    class="badge-statut badge-disponible badge-statut-cliquable"
-                    onclick="ouvrirModalAssigner(this)"
-                    data-vehicule-id="{{ v.id }}"
-                    data-matricule="{{ v.matricule | e }}"
-                    title="{{ t.utiliser_ce_vehicule }}"
-                >
-                    {{ t.statut_disponible }}
-                </button>
+                {% if v.statut_affichage.value == 'ok' %}
+                <span class="badge-statut badge-libre">{{ t.statut_ok }}</span>
+                {% elif v.statut_affichage.value == 'disponible' %}
+                <span class="badge-statut badge-disponible">{{ t.statut_disponible }}</span>
                 {% elif v.statut_affichage.value == 'occupe' %}
-                <button
-                    type="button"
-                    class="badge-statut badge-occupe badge-statut-cliquable"
-                    onclick="ouvrirModalLiberer(this)"
-                    data-vehicule-id="{{ v.id }}"
-                    data-matricule="{{ v.matricule | e }}"
-                    title="{{ t.liberer_ce_vehicule }}"
-                >
-                    {{ t.statut_occupe }}
-                </button>
+                <span class="badge-statut badge-occupe">{{ t.statut_occupe }}</span>
                 {% elif v.statut_affichage.value == 'no_disponible' %}
                 <button
                     type="button"
@@ -87,6 +74,7 @@
                 {% endif %}
             </div>
         </div>
+        </div>
 
         <div class="carte-vehicule-corps">
             <div class="champ-info">
@@ -95,12 +83,31 @@
             </div>
 
             <div class="champ-info">
-                <span class="champ-label">{{ t.utilisateur_jour }}</span>
+                <span class="champ-label">{{ t.utilisateur_assigne }}</span>
                 <span class="champ-valeur">
-                    {% if v.utilisateur_jour %}
-                    {{ v.utilisateur_jour }}
+                    {% set utilisateur_affiche = v.utilisateur_assigne or v.utilisateur_jour %}
+                    {% if est_admin %}
+                    <button
+                        type="button"
+                        class="champ-valeur-lien"
+                        onclick="ouvrirModalAssignation(this)"
+                        data-vehicule-id="{{ v.id }}"
+                        data-matricule="{{ v.matricule | e }}"
+                        data-utilisateur-actuel="{{ (utilisateur_affiche or t.utilisateur_libre) | e }}"
+                        title="{{ t.modifier_conducteur }}"
+                    >
+                        {% if utilisateur_affiche %}
+                        {{ utilisateur_affiche }}
+                        {% else %}
+                        {{ t.utilisateur_libre }}
+                        {% endif %}
+                    </button>
+                    {% else %}
+                    {% if utilisateur_affiche %}
+                    {{ utilisateur_affiche }}
                     {% else %}
                     {{ t.utilisateur_libre }}
+                    {% endif %}
                     {% endif %}
                 </span>
             </div>
@@ -110,6 +117,39 @@
                 <span class="champ-valeur">{{ v.kilometrage_actuel }} {{ t.km_unite }}</span>
             </div>
 
+            {% if est_admin %}
+            <div class="carte-vehicule-donnees-jour-bureau">
+                <div class="champ-info">
+                    <span class="champ-label">{{ t.kilometrage_journalier }}</span>
+                    <span class="champ-valeur">{{ v.kilometrage_jour_aujourdhui }} {{ t.km_unite }}</span>
+                </div>
+                <div class="champ-info">
+                    <span class="champ-label">{{ t.consommation_jour }}</span>
+                    <span class="champ-valeur">{{ v.consommation_jour_aujourdhui }} {{ t.litres_unite }}</span>
+                </div>
+                <div class="champ-info">
+                    <span class="champ-label">{{ t.cout_carburant_jour }}</span>
+                    <span class="champ-valeur">{{ v.cout_carburant_jour_aujourdhui }} {{ t.euro_unite }}</span>
+                </div>
+            </div>
+            <details class="carte-vehicule-details carte-vehicule-donnees-jour">
+                <summary class="carte-vehicule-details-summary">{{ t.ver_datos_dia }}</summary>
+                <div class="carte-vehicule-details-contenu">
+                    <div class="champ-info">
+                        <span class="champ-label">{{ t.kilometrage_journalier }}</span>
+                        <span class="champ-valeur">{{ v.kilometrage_jour_aujourdhui }} {{ t.km_unite }}</span>
+                    </div>
+                    <div class="champ-info">
+                        <span class="champ-label">{{ t.consommation_jour }}</span>
+                        <span class="champ-valeur">{{ v.consommation_jour_aujourdhui }} {{ t.litres_unite }}</span>
+                    </div>
+                    <div class="champ-info">
+                        <span class="champ-label">{{ t.cout_carburant_jour }}</span>
+                        <span class="champ-valeur">{{ v.cout_carburant_jour_aujourdhui }} {{ t.euro_unite }}</span>
+                    </div>
+                </div>
+            </details>
+            {% else %}
             <div class="champ-info">
                 <span class="champ-label">{{ t.kilometrage_journalier }}</span>
                 <span class="champ-valeur">{{ v.kilometrage_jour_aujourdhui }} {{ t.km_unite }}</span>
@@ -124,6 +164,7 @@
                 <span class="champ-label">{{ t.cout_carburant_jour }}</span>
                 <span class="champ-valeur">{{ v.cout_carburant_jour_aujourdhui }} {{ t.euro_unite }}</span>
             </div>
+            {% endif %}
 
             <div class="champ-info champ-info-itv">
                 <span class="champ-label">{{ t.itv }}</span>
@@ -174,6 +215,7 @@
 
         <div class="carte-vehicule-actions">
             {% if v.statut_affichage.value == 'au_garage' %}
+            {% if est_admin %}
             <button
                 type="button"
                 class="btn btn-primaire"
@@ -181,8 +223,11 @@
             >
                 {{ t.remettre_en_service }}
             </button>
+            {% endif %}
             {% else %}
-            {% if v.utilisateur_jour and (est_admin or v.utilisateur_jour == nom_utilisateur_courant) and v.statut_affichage.value != 'au_garage' %}
+            {% set utilisateur_affiche = v.utilisateur_assigne or v.utilisateur_jour %}
+            {% set est_utilisateur_assigne = utilisateur_affiche and utilisateur_affiche|lower == nom_utilisateur_courant|lower %}
+            {% if est_utilisateur_assigne %}
             <button
                 type="button"
                 class="btn btn-primaire"
@@ -197,14 +242,25 @@
                 {{ t.modifier_donnees_jour }}
             </button>
             {% endif %}
+            {% if est_admin or est_utilisateur_assigne %}
             <button type="button" class="btn btn-secondaire" onclick="ouvrirModalGarage({{ v.id }})">
                 {{ t.mettre_au_garage }}
             </button>
+            {% endif %}
             {% endif %}
         </div>
     </article>
     {% endfor %}
 </div>
+
+{% include "vehicules/partials/infos_flotte.html" %}
 {% else %}
-<p class="compteur-resultats">{{ t.aucun_resultat }}</p>
+<p class="compteur-resultats">
+    {% if est_admin %}
+    {{ t.aucun_resultat }}
+    {% else %}
+    {{ t.aucun_vehicule_assigne }}
+    {% endif %}
+</p>
+{% include "vehicules/partials/infos_flotte.html" %}
 {% endif %}

@@ -13,8 +13,6 @@ from backend.app.modules.auth.service import AuthService
 CHEMINS_PUBLICS = (
     "/login",
     "/static",
-    "/manifest.webmanifest",
-    "/sw.js",
     "/docs",
     "/redoc",
     "/openapi.json",

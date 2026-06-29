@@ -37,35 +37,29 @@ Gestion simple du parc informatique pour une PME : equipements, affectation, eta
 | commentaire | Text nullable | Note libre |
 | utilisateur_responsable | String nullable | Utilisateur concerne ou responsable |
 
-## Statut deduit des evenements
+## Statut (admin)
 
-Le statut n'est **pas saisi manuellement** en liste publique. Il est calcule :
+Le champ `statut` est modifie directement par l'admin (OK, Mantenimiento, Averia). Champs admin supplementaires : `facture_url`, `licences` (JSON).
 
-| Dernier evenement impactant | Statut |
-|-----------------------------|--------|
-| `panne` | En panne |
-| `entretien`, `intervention_technique` | En maintenance |
-| `maintenance_terminee` ou aucun blocage | OK |
-
-L'evenement `changement_utilisateur` met a jour l'utilisateur assigne sans bloquer l'equipement.
-
-## Types d'evenements
+## Types d'evenements (admin uniquement)
 
 | Type | Effet |
 |------|-------|
-| changement_utilisateur | Change ou retire l'utilisateur assigne |
-| entretien | Maintenance en cours |
-| intervention_technique | Intervention technique en cours |
-| maintenance_terminee | Fin de maintenance (retour a OK) |
-| panne | Equipement indisponible |
+| entretien | Historique maintenance |
+| intervention_technique | Historique intervention |
+
+L'assignation utilisateur passe par le formulaire admin, pas par evenement.
+
+Les utilisateurs non-admin voient la liste complete en **lecture seule** avec section « Detalles tecnicos » depliable.
 
 ## Routes web
 
 | Route | Description |
 |-------|-------------|
-| `GET /ordinateurs` | Liste + modal evenement |
+| `GET /ordinateurs` | Liste (lecture seule user / admin avec actions) |
 | `GET /ordinateurs/{id}/historique` | Historique |
-| `POST /ordinateurs/{id}/evenement` | Enregistrer un evenement |
+| `POST /ordinateurs/{id}/evenement` | Enregistrer un evenement (admin) |
+| `POST /admin/ordinateurs/{id}/statut` | Modifier le statut (admin) |
 | `GET /admin/ordinateurs` | Admin : CRUD ordinateurs |
 
 ## Routes API
@@ -81,6 +75,7 @@ L'evenement `changement_utilisateur` met a jour l'utilisateur assigne sans bloqu
 ## Migration
 
 - `007` : tables `ordinateurs` et `ordinateur_evenements`
+- `013` : `facture_url`, `licences` (JSON)
 
 ## Donnees de demonstration
 

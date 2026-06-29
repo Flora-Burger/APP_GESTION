@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 
 from backend.app.modules.auth.affichage import obtenir_nom_affichage, peut_actualizar_donnees_vehicule
 from backend.app.modules.auth.modeles import Utilisateur
+from backend.app.modules.vehicules.configuration_service import ConfigurationVehiculesService
 from backend.app.modules.vehicules.fichiers_photos import (
     enregistrer_photo_vehicule,
     supprimer_photo_locale,
@@ -93,6 +94,19 @@ def obtenir_journal_du_jour(
     return obtenir_journal_actif(vehicule, date_reference)
 
 
+def obtenir_utilisateur_effectif(
+    vehicule: Vehicule, date_reference: date | None = None
+) -> str | None:
+    """Retourne l'utilisateur assigne au vehicule (champ permanent, journal en secours)."""
+    assigne = (vehicule.utilisateur_assigne or "").strip()
+    if assigne:
+        return assigne
+    journal = obtenir_journal_actif(vehicule, date_reference)
+    if journal and journal.utilisateur and journal.utilisateur.strip():
+        return journal.utilisateur.strip()
+    return None
+
+
 def formater_modele_affiche(vehicule: Vehicule) -> str:
     """Formate le modele affiche (marque + modele si distinct)."""
     if vehicule.marque and vehicule.marque.lower() not in vehicule.modele.lower():
@@ -175,6 +189,7 @@ class VehiculeService:
 
     def __init__(self, session: Session):
         self.repo = VehiculeRepository(session)
+        self.config_service = ConfigurationVehiculesService(session)
 
     def _assurer_photo(self, vehicule: Vehicule) -> str:
         """Resout et persiste l'image si absente."""
@@ -189,11 +204,18 @@ class VehiculeService:
     ) -> VehiculeResponse:
         """Construit la reponse avec les donnees du jour."""
         jour = date_reference or date.today()
-        journal_jour = obtenir_journal_actif(vehicule, jour)
-        utilisateur = journal_jour.utilisateur if journal_jour else None
+        self._assurer_journal_assignation_jour(vehicule, jour)
+        journal_jour = self.repo.obtenir_journal_actif(vehicule.id, jour)
+        if journal_jour is None:
+            journal_jour = obtenir_journal_actif(vehicule, jour)
+        if not (vehicule.utilisateur_assigne or "").strip() and journal_jour and journal_jour.utilisateur:
+            vehicule.utilisateur_assigne = journal_jour.utilisateur.strip()
+            vehicule = self.repo.sauvegarder(vehicule)
+        utilisateur = obtenir_utilisateur_effectif(vehicule, jour)
         km_jour, conso_jour, cout_jour = obtenir_totaux_jour(vehicule, jour)
         photo = self._assurer_photo(vehicule)
         immobilisation = obtenir_immobilisation_active(vehicule)
+        config = self.config_service.obtenir()
 
         return VehiculeResponse(
             id=vehicule.id,
@@ -224,6 +246,11 @@ class VehiculeService:
             cout_session_aujourdhui=(
                 journal_jour.cout_carburant_jour if journal_jour else Decimal("0.00")
             ),
+            utilisateur_assigne=vehicule.utilisateur_assigne,
+            seguro_compania=config.seguro_compania,
+            seguro_poliza=config.seguro_poliza,
+            seguro_contactos=config.seguro_contactos,
+            talleres_referencia=config.talleres_referencia,
         )
 
     def _appliquer_filtres(
@@ -245,13 +272,7 @@ class VehiculeService:
                     v
                     for v in resultat
                     if not est_au_garage(v)
-                    and calculer_statut(
-                        (
-                            obtenir_journal_actif(v, jour).utilisateur
-                            if obtenir_journal_actif(v, jour)
-                            else None
-                        )
-                    ).value
+                    and calculer_statut(obtenir_utilisateur_effectif(v, jour)).value
                     == statut.value
                 ]
 
@@ -280,6 +301,7 @@ class VehiculeService:
         statut: FiltreStatut | None = None,
         itv: FiltreItv | None = None,
         km_jour: FiltreKmJour | None = None,
+        utilisateur_assigne: str | None = None,
     ) -> list[VehiculeResponse]:
         """Liste les vehicules avec filtres et recherche."""
         terme = recherche.strip() if recherche else ""
@@ -287,6 +309,15 @@ class VehiculeService:
             vehicules = self.repo.rechercher(terme)
         else:
             vehicules = self.repo.obtenir_tous()
+
+        if utilisateur_assigne:
+            filtre = utilisateur_assigne.strip().lower()
+            vehicules = [
+                v
+                for v in vehicules
+                if v.utilisateur_assigne
+                and v.utilisateur_assigne.strip().lower() == filtre
+            ]
 
         vehicules = self._appliquer_filtres(vehicules, statut, itv, km_jour)
         return [self._construire_reponse(v) for v in vehicules]
@@ -398,9 +429,65 @@ class VehiculeService:
             date_expiration_itv=date.today() + timedelta(days=365),
             kilometrage_actuel=donnees.kilometrage_actuel,
             consommation_moyenne=Decimal("0.00"),
+            utilisateur_assigne=(
+                donnees.utilisateur_assigne.strip()
+                if donnees.utilisateur_assigne and donnees.utilisateur_assigne.strip()
+                else None
+            ),
         )
         vehicule = self.repo.creer(vehicule)
+        if vehicule.utilisateur_assigne:
+            self._synchroniser_journal_assignation(vehicule)
+            self.repo.session.commit()
         return self._construire_reponse(vehicule)
+
+    def _synchroniser_journal_assignation(
+        self, vehicule: Vehicule, date_reference: date | None = None
+    ) -> None:
+        """Assure un journal actif pour l'utilisateur assigne permanent."""
+        assigne = (vehicule.utilisateur_assigne or "").strip()
+        jour = date_reference or date.today()
+        if not assigne:
+            for journal in obtenir_journaux_du_jour(vehicule, jour):
+                journal.actif = False
+            return
+
+        for journal in obtenir_journaux_du_jour(vehicule, jour):
+            if journal.utilisateur and journal.utilisateur.strip().lower() == assigne.lower():
+                journal.actif = True
+            else:
+                journal.actif = False
+
+        journal_actif = self.repo.obtenir_journal_actif(vehicule.id, jour)
+        if journal_actif is None:
+            entree = self.repo.obtenir_journal_par_utilisateur(vehicule.id, jour, assigne)
+            if entree is not None:
+                entree.actif = True
+            else:
+                self.repo.session.add(
+                    VehiculeJournal(
+                        vehicule_id=vehicule.id,
+                        date_jour=jour,
+                        utilisateur=assigne,
+                        actif=True,
+                        kilometrage_actuel=vehicule.kilometrage_actuel,
+                        kilometrage_jour=0,
+                        consommation_jour=Decimal("0.00"),
+                        cout_carburant_jour=Decimal("0.00"),
+                    )
+                )
+
+    def _assurer_journal_assignation_jour(
+        self, vehicule: Vehicule, date_reference: date | None = None
+    ) -> None:
+        """Cree le journal du jour pour l'assignation permanente si necessaire."""
+        if not (vehicule.utilisateur_assigne or "").strip():
+            return
+        jour = date_reference or date.today()
+        if self.repo.obtenir_journal_actif(vehicule.id, jour) is not None:
+            return
+        self._synchroniser_journal_assignation(vehicule, jour)
+        self.repo.session.flush()
 
     async def modifier_admin(
         self,
@@ -408,7 +495,7 @@ class VehiculeService:
         donnees: VehiculeUpdateAdmin,
         photo_fichier: UploadFile | None = None,
     ) -> VehiculeResponse:
-        """Modifie matricule, modele et photo d'un vehicule."""
+        """Modifie matricule, modele, assignation et photo d'un vehicule."""
         vehicule = self.repo.obtenir_par_id(vehicule_id)
         if vehicule is None:
             raise HTTPException(
@@ -433,6 +520,11 @@ class VehiculeService:
 
         vehicule.matricule = matricule
         vehicule.modele = modele
+        vehicule.utilisateur_assigne = (
+            donnees.utilisateur_assigne.strip()
+            if donnees.utilisateur_assigne and donnees.utilisateur_assigne.strip()
+            else None
+        )
 
         if photo_fichier is not None and photo_fichier.filename:
             ancienne_photo = vehicule.photo_url
@@ -442,6 +534,31 @@ class VehiculeService:
                 supprimer_photo_locale(ancienne_photo)
 
         vehicule = self.repo.sauvegarder(vehicule)
+        self._synchroniser_journal_assignation(vehicule)
+        self.repo.session.commit()
+        return self._construire_reponse(vehicule)
+
+    def changer_assignation_admin(
+        self,
+        vehicule_id: int,
+        utilisateur_assigne: str | None,
+    ) -> VehiculeResponse:
+        """Met a jour l'utilisateur assigne permanent d'un vehicule."""
+        vehicule = self.repo.obtenir_par_id(vehicule_id)
+        if vehicule is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="vehicule_introuvable",
+            )
+
+        vehicule.utilisateur_assigne = (
+            utilisateur_assigne.strip()
+            if utilisateur_assigne and utilisateur_assigne.strip()
+            else None
+        )
+        vehicule = self.repo.sauvegarder(vehicule)
+        self._synchroniser_journal_assignation(vehicule)
+        self.repo.session.commit()
         return self._construire_reponse(vehicule)
 
     def supprimer_admin(self, vehicule_id: int) -> None:
@@ -478,14 +595,19 @@ class VehiculeService:
                 detail="vehicule_au_garage",
             )
 
-        journal_actif = obtenir_journal_actif(vehicule, donnees.date_jour)
+        journal_actif = self.repo.obtenir_journal_actif(vehicule_id, donnees.date_jour)
+        if journal_actif is None:
+            self._synchroniser_journal_assignation(vehicule, donnees.date_jour)
+            self.repo.session.flush()
+            journal_actif = self.repo.obtenir_journal_actif(vehicule_id, donnees.date_jour)
         if journal_actif is None:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail="vehicule_non_assigne",
             )
 
-        if not peut_actualizar_donnees_vehicule(utilisateur, journal_actif.utilisateur):
+        assigne = obtenir_utilisateur_effectif(vehicule, donnees.date_jour) or ""
+        if not peut_actualizar_donnees_vehicule(utilisateur, assigne):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="actualisation_non_autorisee",
@@ -513,6 +635,29 @@ class VehiculeService:
 
         vehicule.date_expiration_itv = donnees.date_expiration_itv
         vehicule = self.repo.sauvegarder(vehicule)
+        self._synchroniser_journal_assignation(vehicule)
+        self.repo.session.commit()
+        return self._construire_reponse(vehicule)
+
+    def assigner_vehicule_admin(
+        self,
+        vehicule_id: int,
+        nom_utilisateur: str | None,
+    ) -> VehiculeResponse:
+        """Assigne durablement un vehicule a un utilisateur (admin)."""
+        vehicule = self.repo.obtenir_par_id(vehicule_id)
+        if vehicule is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="vehicule_introuvable",
+            )
+
+        vehicule.utilisateur_assigne = (
+            nom_utilisateur.strip() if nom_utilisateur and nom_utilisateur.strip() else None
+        )
+        vehicule = self.repo.sauvegarder(vehicule)
+        self._synchroniser_journal_assignation(vehicule)
+        self.repo.session.commit()
         return self._construire_reponse(vehicule)
 
     def assigner_vehicule(
@@ -538,33 +683,17 @@ class VehiculeService:
                 detail="itv_expiree",
             )
 
-        if self.repo.obtenir_journal_actif(vehicule_id, jour) is not None:
+        if obtenir_utilisateur_effectif(vehicule, jour):
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail="vehicule_deja_occupe",
             )
 
         nom = obtenir_nom_affichage(utilisateur)
-        entree_existante = self.repo.obtenir_journal_par_utilisateur(
-            vehicule_id, jour, nom
-        )
-        if entree_existante is not None:
-            entree_existante.actif = True
-            journal = entree_existante
-        else:
-            journal = VehiculeJournal(
-                vehicule_id=vehicule_id,
-                date_jour=jour,
-                utilisateur=nom,
-                actif=True,
-                kilometrage_actuel=vehicule.kilometrage_actuel,
-                kilometrage_jour=0,
-                consommation_jour=Decimal("0.00"),
-                cout_carburant_jour=Decimal("0.00"),
-            )
-            self.repo.session.add(journal)
-
-        self.repo.sauvegarder(vehicule)
+        vehicule.utilisateur_assigne = nom
+        vehicule = self.repo.sauvegarder(vehicule)
+        self._synchroniser_journal_assignation(vehicule, jour)
+        self.repo.session.commit()
         return self._construire_reponse(vehicule)
 
     def liberer_vehicule(self, vehicule_id: int) -> VehiculeResponse:
@@ -586,6 +715,9 @@ class VehiculeService:
 
         journal_actif.actif = False
         self.repo.sauvegarder_journal(journal_actif)
+        vehicule.utilisateur_assigne = None
+        vehicule = self.repo.sauvegarder(vehicule)
+        self.repo.session.commit()
         return self._construire_reponse(vehicule)
 
     def ajouter_journal(
@@ -622,7 +754,10 @@ class VehiculeService:
         return self.repo.obtenir_garages_connus()
 
     def mettre_au_garage(
-        self, vehicule_id: int, donnees: ImmobilisationCreate
+        self,
+        vehicule_id: int,
+        donnees: ImmobilisationCreate,
+        utilisateur: Utilisateur | None = None,
     ) -> ImmobilisationResponse:
         """Immobilise un vehicule au garage."""
         vehicule = self.repo.obtenir_par_id(vehicule_id)
@@ -638,6 +773,15 @@ class VehiculeService:
             )
 
         jour = date.today()
+
+        if utilisateur is not None and utilisateur.role != "admin":
+            self._assurer_journal_assignation_jour(vehicule, jour)
+            assigne = obtenir_utilisateur_effectif(vehicule, jour) or ""
+            if not peut_actualizar_donnees_vehicule(utilisateur, assigne):
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="actualisation_non_autorisee",
+                )
         journal_actif = self.repo.obtenir_journal_actif(vehicule_id, jour)
         if journal_actif is not None:
             journal_actif.actif = False
@@ -687,7 +831,7 @@ class VehiculeService:
 
         for v in vehicules:
             reponse = self._construire_reponse(v)
-            utilisateur = reponse.utilisateur_jour or "Libre"
+            utilisateur = reponse.utilisateur_assigne or reponse.utilisateur_jour or "Libre"
             resultats.append(
                 ResultatRecherche(
                     module_id="vehicules",

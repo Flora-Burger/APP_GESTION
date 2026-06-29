@@ -86,6 +86,30 @@ class AuthService:
             UtilisateurResponse.model_validate(u) for u in self.repo.obtenir_tous()
         ]
 
+    def lister_contacts_entreprise(self) -> dict[str, list[dict]]:
+        """Liste les contacts actifs separes par role."""
+        contacts = [
+            {
+                "id": u.id,
+                "email": u.email,
+                "nom": (u.nom or u.email).strip(),
+                "telefono": (u.telefono or "").strip(),
+                "correo": (u.correo or "").strip(),
+                "est_admin": u.role == RoleUtilisateur.ADMIN.value,
+            }
+            for u in self.repo.obtenir_tous()
+            if u.est_actif
+        ]
+        admins = sorted(
+            [c for c in contacts if c["est_admin"]],
+            key=lambda c: c["nom"].lower(),
+        )
+        utilisateurs = sorted(
+            [c for c in contacts if not c["est_admin"]],
+            key=lambda c: c["nom"].lower(),
+        )
+        return {"admins": admins, "utilisateurs": utilisateurs}
+
     def creer_utilisateur(self, donnees: UtilisateurCreate) -> UtilisateurResponse:
         """Cree un nouveau compte (admin uniquement)."""
         identifiant = donnees.email
@@ -99,6 +123,8 @@ class AuthService:
             email=identifiant,
             mot_de_passe_hash=hasher_mot_de_passe(donnees.mot_de_passe),
             nom=donnees.nom,
+            telefono=(donnees.telefono or "").strip() or None,
+            correo=(donnees.correo or "").strip() or None,
             role=donnees.role.value,
             est_actif=True,
         )
@@ -184,6 +210,8 @@ class AuthService:
 
         cible.email = identifiant
         cible.nom = donnees.nom
+        cible.telefono = (donnees.telefono or "").strip() or None
+        cible.correo = (donnees.correo or "").strip() or None
         cible.role = role_nouveau
 
         if donnees.mot_de_passe:

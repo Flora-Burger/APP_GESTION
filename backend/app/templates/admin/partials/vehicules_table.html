@@ -6,6 +6,7 @@
                 <th>{{ t.photo_vehicule }}</th>
                 <th>{{ t.matricule }}</th>
                 <th>{{ t.modele }}</th>
+                <th>{{ t.utilisateur_assigne }}</th>
                 <th>{{ t.actions }}</th>
             </tr>
         </thead>
@@ -17,6 +18,7 @@
                 </td>
                 <td data-label="{{ t.matricule }}">{{ v.matricule }}</td>
                 <td data-label="{{ t.modele }}">{{ v.modele_affiche }}</td>
+                <td data-label="{{ t.utilisateur_assigne }}">{{ v.utilisateur_assigne or t.non_assigne }}</td>
                 <td class="cellule-actions" data-label="{{ t.actions }}">
                     <div class="cellule-actions-ligne">
                         <a href="/admin/vehicules/{{ v.id }}/modifier" class="btn btn-secondaire btn-petit">
@@ -36,7 +38,7 @@
             </tr>
             {% else %}
             <tr>
-                <td colspan="4" class="cellule-vide">{{ t.aucun_resultat }}</td>
+                <td colspan="5" class="cellule-vide">{{ t.aucun_resultat }}</td>
             </tr>
             {% endfor %}
         </tbody>

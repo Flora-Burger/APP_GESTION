@@ -9,6 +9,7 @@
     --couleur-surface: #ffffff;
     --couleur-texte: #1e2a3a;
     --couleur-texte-leger: #5a6b7d;
+    --couleur-label-champ: #2d6ba8;
     --couleur-bordure: #c5d5ea;
     --couleur-icone: #1a5f4a;
     --couleur-icone-fond: rgba(26, 95, 74, 0.1);
@@ -123,6 +124,11 @@ a:hover {
 .en-tete-lien:hover {
     background: rgba(255, 255, 255, 0.15);
     text-decoration: none;
+}
+
+.btn-menu-lateral,
+.menu-lateral {
+    display: none;
 }
 
 /* Conteneur principal */
@@ -579,15 +585,6 @@ a:hover {
     width: 100%;
 }
 
-/* Leyenda estados (mobile uniquement via mobile.css) */
-.legende-statuts {
-    display: none;
-}
-
-.bandeau-installer-pwa {
-    display: none;
-}
-
 /* Liste vehicules */
 .compteur-resultats {
     margin-bottom: 1rem;
@@ -597,7 +594,7 @@ a:hover {
 
 .grille-vehicules {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(340px, 100%), 1fr));
     gap: 1.25rem;
 }
 
@@ -656,8 +653,8 @@ a:hover {
 }
 
 .champ-label {
-    color: var(--couleur-texte-leger);
-    font-weight: 500;
+    color: var(--couleur-label-champ);
+    font-weight: 600;
 }
 
 .champ-valeur {
@@ -928,6 +925,8 @@ body.modal-ouverte {
     cursor: pointer;
     font: inherit;
     transition: transform 0.12s, box-shadow 0.12s;
+    text-decoration: underline;
+    text-underline-offset: 2px;
 }
 
 .badge-itv-cliquable:hover {
@@ -972,10 +971,106 @@ body.modal-ouverte {
     margin: 0;
 }
 
-.carte-vehicule-entete-statut .badge-statut {
-    font-size: 0.9rem;
+.carte-vehicule-entete-statut .badge-statut,
+.carte-vehicule-entete-statut .badge-statut-cliquable {
+    font-size: 0.95rem;
     text-transform: uppercase;
-    letter-spacing: 0.02em;
+    letter-spacing: 0.03em;
+}
+
+.page-ordinateurs-liste .carte-ordinateur .carte-vehicule-entete-statut .badge-statut,
+.page-ordinateurs-liste .carte-ordinateur .carte-vehicule-entete-statut .badge-statut-cliquable,
+.page-imprimantes-liste .carte-imprimante .carte-vehicule-entete-statut .badge-statut,
+.page-imprimantes-liste .carte-imprimante .carte-vehicule-entete-statut .badge-statut-cliquable {
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.lien-facture {
+    color: var(--couleur-primaire);
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.lien-facture:hover {
+    text-decoration: underline;
+}
+
+.details-licences-minimal {
+    margin-top: 0.15rem;
+    border: none;
+    background: none;
+}
+
+.details-licences-minimal-summary {
+    cursor: pointer;
+    list-style: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.15rem 0;
+    font-size: 0.96rem;
+    font-weight: 600;
+    color: var(--couleur-label-champ);
+}
+
+.details-licences-minimal-summary::-webkit-details-marker {
+    display: none;
+}
+
+.details-licences-minimal-summary::before {
+    content: "›";
+    display: inline-block;
+    font-size: 0.95rem;
+    line-height: 1;
+    color: var(--couleur-texte-leger);
+    transition: transform 0.15s ease;
+}
+
+.details-licences-minimal[open] .details-licences-minimal-summary::before {
+    transform: rotate(90deg);
+}
+
+.details-licences-minimal-contenu {
+    margin-top: 0.25rem;
+    padding-left: 0.85rem;
+    border-left: 1px solid var(--couleur-bordure);
+}
+
+.licence-ligne-minimal {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.2rem 0.75rem;
+    padding: 0.2rem 0;
+    font-size: 0.78rem;
+    line-height: 1.3;
+}
+
+.licence-ligne-minimal .licence-nom {
+    font-weight: 600;
+    color: var(--couleur-texte);
+}
+
+.licence-ligne-minimal .licence-expiration {
+    font-size: inherit;
+    color: var(--couleur-texte-leger);
+    white-space: nowrap;
+}
+
+.admin-details-technique {
+    margin-top: 1.25rem;
+    margin-bottom: 1.25rem;
+}
+
+.admin-details-technique .carte-vehicule-details-contenu {
+    padding-top: 1rem;
+}
+
+.admin-details-technique .grille-form-admin {
+    margin: 0;
 }
 
 .btn-historique {
@@ -1264,6 +1359,37 @@ body.modal-ouverte {
     color: var(--couleur-texte-leger);
     font-size: 0.95rem;
     margin-top: 0.35rem;
+}
+
+.historique-resume-identite {
+    margin: 0.35rem 0 0.85rem;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--couleur-texte);
+}
+
+.historique-resume-info {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.35rem 0.5rem;
+    margin: 0.3rem 0 0;
+    font-size: 0.95rem;
+    line-height: 1.4;
+}
+
+.historique-resume-libelle {
+    color: var(--couleur-label-champ);
+    font-weight: 600;
+}
+
+.historique-resume-libelle::after {
+    content: ":";
+}
+
+.historique-resume-valeur {
+    color: var(--couleur-texte);
+    font-weight: 600;
 }
 
 .historique-section-titre {
@@ -1641,6 +1767,20 @@ body.modal-ouverte {
     margin-bottom: 1rem;
 }
 
+.lien-retour-accueil-bureau {
+    display: none;
+}
+
+@media (min-width: 769px) {
+    .lien-retour-accueil-bureau {
+        display: block;
+    }
+
+    .page-accueil .lien-retour-accueil-bureau {
+        display: none;
+    }
+}
+
 .lien-retour a {
     color: var(--couleur-primaire);
     text-decoration: underline;
@@ -1677,6 +1817,157 @@ body.modal-ouverte {
 .page-admin-vehicules .titre-page,
 .page-admin-ordinateurs .titre-page {
     margin-bottom: 1.5rem;
+}
+
+.page-admin-vehicules .admin-utilisateurs-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+    max-width: 40rem;
+}
+
+.page-admin-vehicules .admin-utilisateurs-actions .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 2.5rem;
+    padding: 0.5rem 1rem;
+    text-align: center;
+    white-space: normal;
+}
+
+@media (max-width: 520px) {
+    .page-admin-vehicules .admin-utilisateurs-actions {
+        grid-template-columns: 1fr;
+        max-width: none;
+    }
+}
+
+/* Badges compacts dans la gestion admin (tableaux + fiches modification) */
+.tableau-admin-bleu .badge-statut,
+.page-admin-utilisateurs .badge-statut,
+.formulaire-admin .badge-statut-cliquable {
+    font-size: 0.72rem;
+    padding: 0.1rem 0.42rem;
+    border-radius: 8px;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    line-height: 1.15;
+}
+
+.tableau-admin-bleu .badge-statut-texte {
+    font-size: inherit;
+    line-height: inherit;
+}
+
+.page-config-vehicules .titre-config-vehicules {
+    font-size: 2.1rem;
+    margin-bottom: 1.75rem;
+}
+
+.page-config-vehicules .sous-titre-section {
+    font-size: 0.85rem;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    margin: 0 0 1rem;
+    color: var(--couleur-primaire-fonce);
+}
+
+.page-config-vehicules .config-section-talleres {
+    margin-top: 2.75rem;
+    padding-top: 0.5rem;
+}
+
+.page-config-vehicules .config-btn-crear {
+    margin-top: 0.85rem;
+    padding: 0.7rem 1.35rem;
+    font-size: 1.05rem;
+    font-weight: 700;
+}
+
+.page-config-vehicules .config-ajout-bloc {
+    margin-bottom: 1.25rem;
+}
+
+.page-config-vehicules .config-actions-formulaire {
+    margin-top: 2.5rem;
+    justify-content: flex-end;
+}
+
+.page-vehicules-utilisateur .entete-page-vehicules {
+    justify-content: center;
+    margin-bottom: 1.25rem;
+}
+
+.page-vehicules-utilisateur .entete-page-vehicules .titre-page {
+    text-align: center;
+    width: 100%;
+}
+
+.page-vehicules-utilisateur #liste-vehicules {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.page-vehicules-utilisateur .grille-vehicules {
+    width: 100%;
+    max-width: 420px;
+}
+
+.page-vehicules-utilisateur .vehicule-infos-flotte {
+    width: 100%;
+    max-width: 420px;
+}
+
+.page-vehicules-utilisateur .compteur-resultats {
+    text-align: center;
+    width: 100%;
+    max-width: 420px;
+}
+
+.page-vehicules-liste .carte-vehicule:not(.carte-ordinateur):not(.carte-imprimante) .carte-vehicule-corps,
+.page-imprimantes-liste .carte-imprimante .carte-vehicule-corps,
+.page-ordinateurs-liste .carte-ordinateur .carte-vehicule-corps {
+    padding: 1.1rem 1.3rem;
+}
+
+.page-vehicules-liste .carte-vehicule:not(.carte-ordinateur):not(.carte-imprimante) .champ-info,
+.page-imprimantes-liste .carte-imprimante .champ-info,
+.page-ordinateurs-liste .carte-ordinateur .champ-info {
+    font-size: 0.98rem;
+    padding: 0.42rem 0;
+}
+
+.page-vehicules-liste .carte-vehicule:not(.carte-ordinateur):not(.carte-imprimante) .champ-label,
+.page-vehicules-liste .carte-vehicule:not(.carte-ordinateur):not(.carte-imprimante) .champ-valeur,
+.page-imprimantes-liste .carte-imprimante .champ-label,
+.page-imprimantes-liste .carte-imprimante .champ-valeur,
+.page-ordinateurs-liste .carte-ordinateur .champ-label,
+.page-ordinateurs-liste .carte-ordinateur .champ-valeur {
+    font-size: 0.96rem;
+}
+
+.page-vehicules-liste .carte-vehicule:not(.carte-ordinateur):not(.carte-imprimante) .carte-vehicule-entete h3,
+.page-imprimantes-liste .carte-imprimante .carte-vehicule-entete h3,
+.page-ordinateurs-liste .carte-ordinateur .carte-vehicule-entete h3 {
+    font-size: 1.05rem;
+}
+
+.page-vehicules-liste .carte-vehicule:not(.carte-ordinateur):not(.carte-imprimante) .badge-itv {
+    font-size: 0.88rem;
+}
+
+.carte-vehicule-compact-haut {
+    display: contents;
+}
+
+@media (min-width: 769px) {
+    .page-vehicules-liste:not(.page-vehicules-utilisateur) .carte-vehicule-donnees-jour {
+        display: none;
+    }
 }
 
 .entete-page-vehicules {
@@ -1724,4 +2015,373 @@ body.modal-ouverte {
     margin-top: 0.35rem;
     color: var(--couleur-texte-leger);
     font-size: 0.9rem;
+}
+
+/* Contacts et statuts admin */
+.ligne-contact-admin {
+    background: rgba(45, 107, 168, 0.08);
+    border-left: 3px solid var(--couleur-primaire);
+}
+
+.badge-contact-admin {
+    display: inline-block;
+    margin-left: 0.5rem;
+    padding: 0.1rem 0.45rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--couleur-primaire);
+    background: rgba(45, 107, 168, 0.12);
+    border-radius: 4px;
+}
+
+.lien-telephone {
+    color: var(--couleur-primaire);
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.lien-telephone:hover {
+    text-decoration: underline;
+}
+
+.badge-statut-cliquable {
+    border: none;
+    cursor: pointer;
+    font: inherit;
+}
+
+.badge-statut-cliquable:hover {
+    filter: brightness(0.95);
+}
+
+.groupe-boutons-statut {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.btn-statut {
+    flex: 1 1 auto;
+    min-width: 7rem;
+}
+
+.details-carte-ressource {
+    margin-top: 0.75rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--couleur-bordure);
+}
+
+.details-carte-ressource summary {
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--couleur-primaire);
+    margin-bottom: 0.5rem;
+}
+
+.carte-vehicule-details {
+    margin-top: 0.85rem;
+    border: 1px solid rgba(45, 107, 168, 0.2);
+    border-radius: 10px;
+    background: linear-gradient(180deg, rgba(45, 107, 168, 0.04) 0%, rgba(255, 255, 255, 0) 100%);
+    overflow: hidden;
+}
+
+.carte-vehicule-details-summary {
+    cursor: pointer;
+    list-style: none;
+    padding: 0.75rem 1rem;
+    font-weight: 700;
+    color: var(--couleur-primaire);
+    background: rgba(45, 107, 168, 0.08);
+    border-bottom: 1px solid transparent;
+}
+
+.carte-vehicule-details[open] .carte-vehicule-details-summary {
+    border-bottom-color: rgba(45, 107, 168, 0.15);
+}
+
+.carte-vehicule-details-summary::-webkit-details-marker {
+    display: none;
+}
+
+.carte-vehicule-details-summary::before {
+    content: "▸";
+    display: inline-block;
+    margin-right: 0.5rem;
+    transition: transform 0.2s ease;
+}
+
+.carte-vehicule-details[open] .carte-vehicule-details-summary::before {
+    transform: rotate(90deg);
+}
+
+.carte-vehicule-details-contenu {
+    padding: 0.85rem 1rem 1rem;
+}
+
+.champ-info-urgence .lien-telephone-urgence {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--couleur-primaire);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.champ-info-urgence .lien-telephone-urgence:hover {
+    text-decoration: underline;
+}
+
+.carte-taller-referencia {
+    padding: 0.75rem 0;
+    border-top: 1px dashed rgba(45, 107, 168, 0.2);
+}
+
+.carte-taller-referencia:first-child {
+    border-top: none;
+    padding-top: 0;
+}
+
+.taller-ciudad-titre {
+    margin: 0 0 0.5rem;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--couleur-primaire);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.taller-ligne-secondaire td {
+    font-size: 0.88rem;
+    color: var(--couleur-texte-leger);
+    padding-top: 0.35rem;
+    padding-bottom: 0.35rem;
+}
+
+.champ-valeur-lien {
+    display: inline;
+    padding: 0;
+    border: none;
+    background: none;
+    font: inherit;
+    color: var(--couleur-primaire);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    cursor: pointer;
+}
+
+.champ-valeur-lien:hover {
+    color: var(--couleur-primaire-fonce, #1e4f7a);
+}
+
+.champ-tableau {
+    width: 100%;
+    min-width: 0;
+    padding: 0.4rem 0.5rem;
+    border: 1px solid var(--couleur-bordure);
+    border-radius: 4px;
+    font: inherit;
+    background: var(--couleur-surface);
+}
+
+.tableau-historique .colonne-actions {
+    width: 7rem;
+    white-space: nowrap;
+}
+
+.groupe-formulaire-repetitif {
+    margin: 0.75rem 0 1rem;
+    padding: 0.85rem 1rem 1rem;
+    border: 1px solid var(--couleur-bordure);
+    border-radius: 8px;
+    background: rgba(45, 107, 168, 0.03);
+}
+
+.groupe-formulaire-repetitif legend {
+    padding: 0 0.35rem;
+    font-weight: 600;
+    color: var(--couleur-primaire);
+}
+
+.vehicule-infos-flotte {
+    margin-top: 1.5rem;
+    padding-top: 1.25rem;
+    border-top: 2px solid var(--couleur-bordure);
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.vehicule-infos-flotte .carte-vehicule-details {
+    margin-top: 0;
+}
+
+.vehicule-infos-flotte .carte-vehicule-details-contenu {
+    padding: 0.5rem 0.65rem 0.65rem;
+}
+
+.flotte-liste-contacts {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+}
+
+.flotte-contact-item,
+.flotte-taller-item {
+    padding: 0.6rem 0.7rem;
+    border-radius: 8px;
+    background: var(--couleur-surface);
+    border: 1px solid var(--couleur-bordure);
+}
+
+.flotte-contact-nom {
+    margin: 0 0 0.25rem;
+    font-weight: 700;
+    font-size: 0.98rem;
+    color: var(--couleur-primaire);
+}
+
+.flotte-contact-telefono {
+    display: inline-block;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #1a1a1a;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.flotte-contact-telefono:hover {
+    color: #000;
+    text-decoration: underline;
+}
+
+.flotte-taller-groupe {
+    margin-bottom: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.flotte-taller-groupe:last-child {
+    margin-bottom: 0;
+}
+
+.flotte-taller-nom {
+    margin: 0 0 0.15rem;
+    font-weight: 700;
+    font-size: 0.98rem;
+    color: var(--couleur-primaire);
+}
+
+.flotte-taller-telefono {
+    display: inline-block;
+    margin: 0.1rem 0;
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: #1a1a1a;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.flotte-taller-telefono:hover {
+    color: #000;
+    text-decoration: underline;
+}
+
+.flotte-taller-adresse {
+    display: inline-block;
+    margin: 0.15rem 0 0;
+    font-size: 0.9rem;
+    color: #1a1a1a;
+    line-height: 1.35;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.flotte-taller-adresse:hover {
+    color: #000;
+    text-decoration: underline;
+}
+
+.vehicule-infos-flotte .taller-ciudad-titre {
+    margin: 0 0 0.35rem;
+    font-size: 1.15rem;
+    color: var(--couleur-primaire);
+}
+
+.vehicule-infos-flotte .taller-ciudad-titre:first-child {
+    margin-top: 0;
+}
+
+.vehicule-infos-flotte .lien-telephone-urgence {
+    font-size: 0.95rem;
+}
+
+.config-ajout-bloc {
+    margin: 1rem 0;
+    padding: 1rem;
+    border: 1px dashed var(--couleur-bordure);
+    border-radius: 8px;
+    background: rgba(45, 107, 168, 0.03);
+}
+
+.config-ajout-titre {
+    margin: 0 0 0.75rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--couleur-primaire);
+}
+
+.config-liste-depliable {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    margin-bottom: 1.25rem;
+}
+
+.config-item-depliable {
+    border: 1px solid var(--couleur-bordure);
+    border-radius: 8px;
+    background: var(--couleur-surface);
+    overflow: hidden;
+}
+
+.config-item-summary {
+    cursor: pointer;
+    list-style: none;
+    padding: 0.75rem 1rem;
+    font-weight: 600;
+    color: var(--couleur-texte);
+    background: rgba(45, 107, 168, 0.06);
+}
+
+.config-item-depliable[open] .config-item-summary {
+    border-bottom: 1px solid var(--couleur-bordure);
+}
+
+.config-item-summary::-webkit-details-marker {
+    display: none;
+}
+
+.config-item-summary::before {
+    content: "▸";
+    display: inline-block;
+    margin-right: 0.5rem;
+    transition: transform 0.2s ease;
+}
+
+.config-item-depliable[open] .config-item-summary::before {
+    transform: rotate(90deg);
+}
+
+.config-item-corps {
+    padding: 0.85rem 1rem 1rem;
+}
+
+.btn-supprimer-config {
+    margin-top: 0.5rem;
 }

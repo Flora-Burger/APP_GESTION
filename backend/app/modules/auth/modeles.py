@@ -17,6 +17,8 @@ class Utilisateur(Base):
     email: Mapped[str] = mapped_column(String(3), unique=True, nullable=False, index=True)
     mot_de_passe_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     nom: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    telefono: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    correo: Mapped[str | None] = mapped_column(String(255), nullable=True)
     role: Mapped[str] = mapped_column(String(20), nullable=False, default="user")
     est_actif: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     cree_le: Mapped[datetime] = mapped_column(

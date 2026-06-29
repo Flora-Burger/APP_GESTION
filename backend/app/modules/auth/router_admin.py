@@ -69,6 +69,8 @@ def creer_utilisateur(
     nom: str = Form(default=""),
     prenom: str = Form(default=""),
     nom_famille: str = Form(default=""),
+    telefono: str = Form(default=""),
+    correo: str = Form(default=""),
     mot_de_passe: str = Form(...),
     role: str = Form(...),
     session: Session = Depends(obtenir_session),
@@ -89,6 +91,8 @@ def creer_utilisateur(
             email=email,
             mot_de_passe=mot_de_passe,
             nom=nom_normalise,
+            telefono=telefono or None,
+            correo=correo or None,
             role=role_enum,
         )
         service.creer_utilisateur(donnees)
@@ -112,6 +116,8 @@ def modifier_utilisateur(
     nom: str = Form(default=""),
     prenom: str = Form(default=""),
     nom_famille: str = Form(default=""),
+    telefono: str = Form(default=""),
+    correo: str = Form(default=""),
     mot_de_passe: str = Form(default=""),
     role: str = Form(...),
     session: Session = Depends(obtenir_session),
@@ -135,6 +141,8 @@ def modifier_utilisateur(
         donnees = UtilisateurUpdate(
             email=email,
             nom=nom_normalise,
+            telefono=telefono or None,
+            correo=correo or None,
             mot_de_passe=mot_de_passe or None,
             role=role_enum,
         )

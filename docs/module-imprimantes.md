@@ -31,30 +31,20 @@ Gestion simple des imprimantes pour une PME : compteur de pages, toner, maintena
 | compteur_pages | Integer nullable | Valeur compteur si applicable |
 | commentaire | Text nullable | Note libre |
 
-## Statut deduit des evenements
+## Statut (admin)
 
-Le statut n'est **pas saisi manuellement**. Il est calcule a partir du dernier evenement impactant l'etat :
+Le champ `statut` est la **source de verite**, modifie par l'admin via pastille cliquable : OK, Mantenimiento, Averia (`panne` en base).
 
-| Dernier evenement | Statut |
-|-------------------|--------|
-| `panne` | En panne |
-| `maintenance` ou `reparation` | En maintenance |
-| `maintenance_terminee` ou autre | OK |
+Champs admin supplementaires (migration 013) : `fecha_compra`, `tipo_tinta`, `facture_url`.
 
-Les evenements `compteur` et `toner` ne modifient pas le statut.
-
-## Types d'evenements
+## Types d'evenements (admin uniquement)
 
 | Type | Effet |
 |------|-------|
-| compteur | Met a jour `compteur_pages` (obligatoire) |
-| toner | Met a jour `date_dernier_toner`, compteur optionnel |
-| maintenance | Demarre une maintenance (statut -> maintenance) |
-| maintenance_terminee | Termine maintenance/reparation (statut -> OK, date maintenance) |
-| panne | Signale une averia (statut -> panne) |
-| reparation | Reparation en cours (statut -> maintenance) |
+| toner | Met a jour `date_dernier_toner` |
+| reparation | Historique uniquement |
 
-Le compteur ne peut pas diminuer.
+Les utilisateurs non-admin voient la liste en **lecture seule** (sans compteur ni boutons d'action).
 
 ## Routes web
 
@@ -62,7 +52,8 @@ Le compteur ne peut pas diminuer.
 |-------|-------------|
 | `GET /imprimantes` | Liste + modal evenement |
 | `GET /imprimantes/{id}/historique` | Historique |
-| `POST /imprimantes/{id}/evenement` | Enregistrer un evenement |
+| `POST /imprimantes/{id}/evenement` | Enregistrer un evenement (admin) |
+| `POST /admin/imprimantes/{id}/statut` | Modifier le statut (admin) |
 | `GET /admin/imprimantes` | Admin : CRUD imprimantes |
 
 ## Routes API
@@ -78,6 +69,7 @@ Le compteur ne peut pas diminuer.
 ## Migration
 
 - `006` : tables `imprimantes` et `imprimante_evenements`
+- `013` : `fecha_compra`, `facture_url`, `tipo_tinta`
 
 ## Donnees de demonstration
 

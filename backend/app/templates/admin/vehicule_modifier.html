@@ -33,12 +33,28 @@
                 <label for="modele">{{ t.modele }}</label>
                 <input type="text" id="modele" name="modele" value="{{ vehicule.modele }}" maxlength="100" required>
             </div>
+            <div class="champ-form">
+                <label for="utilisateur_id">{{ t.utilisateur_id }}</label>
+                <input
+                    type="text"
+                    id="utilisateur_id"
+                    name="utilisateur_id"
+                    value="{{ utilisateur_assigne_id }}"
+                    inputmode="numeric"
+                    pattern="[0-9]{0,3}"
+                    maxlength="3"
+                    placeholder="{{ t.utilisateur_id_placeholder }}"
+                    title="{{ t.identifiant_format }}"
+                >
+                <p class="aide-champ">{{ t.utilisateur_id_aide }}</p>
+            </div>
             <div class="champ-form champ-form-large">
                 <label for="photo">{{ t.changer_photo }}</label>
                 <input type="file" id="photo" name="photo" accept="image/jpeg,image/png,image/webp">
                 <p class="aide-champ">{{ t.photo_aide }}</p>
             </div>
         </div>
+
         <div class="actions-formulaire">
             <button type="submit" class="btn btn-primaire">{{ t.enregistrer }}</button>
             <a href="/admin/vehicules" class="btn btn-secondaire">{{ t.annuler }}</a>

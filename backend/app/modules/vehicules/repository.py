@@ -113,7 +113,7 @@ class VehiculeRepository:
         return journal
 
     def rechercher(self, terme: str) -> list[Vehicule]:
-        """Recherche textuelle sur les donnees maitres et l'utilisateur du jour."""
+        """Recherche textuelle sur le parc et l'utilisateur assigne actif."""
         if not terme.strip():
             return self.obtenir_tous()
 
@@ -124,6 +124,7 @@ class VehiculeRepository:
             .where(
                 VehiculeJournal.utilisateur.ilike(pattern),
                 VehiculeJournal.date_jour == jour,
+                VehiculeJournal.actif.is_(True),
             )
             .distinct()
         )
@@ -138,6 +139,7 @@ class VehiculeRepository:
                     Vehicule.matricule.ilike(pattern),
                     Vehicule.marque.ilike(pattern),
                     Vehicule.modele.ilike(pattern),
+                    Vehicule.utilisateur_assigne.ilike(pattern),
                     Vehicule.id.in_(sous_requete_utilisateur),
                 )
             )

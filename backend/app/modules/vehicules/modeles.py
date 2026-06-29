@@ -24,6 +24,14 @@ class Vehicule(Base):
     consommation_moyenne: Mapped[Decimal] = mapped_column(
         Numeric(6, 2), nullable=False, default=Decimal("0.00")
     )
+    utilisateur_assigne: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    seguro_compania: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    seguro_poliza: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    seguro_tel_asistencia: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    seguro_tel_grua: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    seguro_tel_emergencias: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    seguro_otro_contacto: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    talleres_referencia: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     journaux: Mapped[list["VehiculeJournal"]] = relationship(
         "VehiculeJournal",

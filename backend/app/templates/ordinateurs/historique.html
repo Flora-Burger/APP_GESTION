@@ -7,11 +7,20 @@
     <a href="/ordinateurs" class="lien-retour">{{ t.retour_liste }}</a>
     <div class="historique-vehicule-resume">
         <div>
-            <h2 class="titre-section">{{ t.historique_ordinateur_titre }}</h2>
-            <p class="sous-titre-page">{{ ordinateur.nom }} - {{ ordinateur.marque }} {{ ordinateur.modele }}</p>
-            <p class="historique-km-actuel">{{ t.utilisateur_assigne }}: <strong>{{ ordinateur.utilisateur_assigne or t.non_assigne }}</strong></p>
-            <p class="historique-meta">{{ t.localisation }}: {{ ordinateur.localisation }}</p>
-            <p class="historique-meta">{{ t.numero_serie }}: {{ ordinateur.numero_serie or '-' }}</p>
+            <h1 class="titre-page">{{ t.historique_ordinateur_titre }}</h1>
+            <p class="historique-resume-identite">{{ ordinateur.nom }} - {{ ordinateur.marque }} {{ ordinateur.modele }}</p>
+            <p class="historique-resume-info">
+                <span class="historique-resume-libelle">{{ t.utilisateur_assigne }}</span>
+                <span class="historique-resume-valeur">{{ ordinateur.utilisateur_assigne or t.non_assigne }}</span>
+            </p>
+            <p class="historique-resume-info">
+                <span class="historique-resume-libelle">{{ t.localisation }}</span>
+                <span class="historique-resume-valeur">{{ ordinateur.localisation }}</span>
+            </p>
+            <p class="historique-resume-info">
+                <span class="historique-resume-libelle">{{ t.numero_serie }}</span>
+                <span class="historique-resume-valeur">{{ ordinateur.numero_serie or '—' }}</span>
+            </p>
         </div>
     </div>
 </div>

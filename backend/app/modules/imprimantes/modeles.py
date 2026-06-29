@@ -21,6 +21,9 @@ class Imprimante(Base):
     compteur_pages: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     date_dernier_toner: Mapped[date | None] = mapped_column(Date, nullable=True)
     date_derniere_maintenance: Mapped[date | None] = mapped_column(Date, nullable=True)
+    fecha_compra: Mapped[date | None] = mapped_column(Date, nullable=True)
+    facture_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    tipo_tinta: Mapped[str | None] = mapped_column(String(100), nullable=True)
     cree_le: Mapped[datetime] = mapped_column(
         DateTime, nullable=False, default=datetime.utcnow
     )

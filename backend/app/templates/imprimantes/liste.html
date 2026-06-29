@@ -1,9 +1,12 @@
 {% extends "base.html" %}
 
 {% block titre %}{{ t.imprimantes }}{% endblock %}
+{% block body_class %}page-imprimantes-liste{% endblock %}
 
 {% block contenu %}
-{% include "partials/lien_retour_accueil.html" %}
+{% if message %}
+<div class="message message-succes">{{ t[message] }}</div>
+{% endif %}
 <div class="entete-page-vehicules">
     <div>
         <h1 class="titre-page">{{ t.imprimantes_titre }}</h1>
@@ -40,12 +43,11 @@
     </div>
 </form>
 
-{% include "partials/legende_statuts.html" %}
-
 <div id="liste-imprimantes">
     {% include "imprimantes/partials/liste_cartes.html" %}
 </div>
 
+{% if est_admin %}
 <div id="modal-evenement-imprimante" class="modal" hidden>
     <div class="modal-fond" onclick="fermerModalesImprimante()"></div>
     <div class="modal-contenu modal-contenu-large" role="dialog" aria-modal="true" aria-labelledby="modal-evenement-imprimante-titre">
@@ -65,19 +67,10 @@
 
             <div class="champ-form">
                 <label for="imprimante-event-type">{{ t.type_evenement }}</label>
-                <select id="imprimante-event-type" name="type_evenement" required onchange="basculerCompteurImprimanteModal()">
-                    <option value="compteur">{{ t.evt_compteur }}</option>
+                <select id="imprimante-event-type" name="type_evenement" required>
                     <option value="toner">{{ t.evt_toner }}</option>
-                    <option value="maintenance">{{ t.evt_maintenance }}</option>
-                    <option value="maintenance_terminee">{{ t.evt_maintenance_terminee }}</option>
-                    <option value="panne">{{ t.evt_panne }}</option>
                     <option value="reparation">{{ t.evt_reparation }}</option>
                 </select>
-            </div>
-
-            <div class="champ-form" id="imprimante-event-compteur-groupe">
-                <label for="imprimante-event-compteur">{{ t.compteur_pages }}</label>
-                <input type="number" id="imprimante-event-compteur" name="compteur_pages" min="0" required>
             </div>
 
             <div class="champ-form">
@@ -92,68 +85,73 @@
         </form>
     </div>
 </div>
+
+<div id="modal-statut-imprimante-liste" class="modal" hidden>
+    <div class="modal-fond" onclick="fermerModalStatutImprimanteListe()"></div>
+    <div class="modal-contenu" role="dialog" aria-modal="true">
+        <h3 class="modal-titre">{{ t.modifier_statut }}</h3>
+        <p id="modal-statut-liste-sous-titre" class="modal-sous-titre"></p>
+        <form id="form-statut-imprimante-liste" method="post" action="">
+            <input type="hidden" name="retour" value="liste">
+            <div class="groupe-boutons-statut">
+                <button type="submit" name="statut" value="ok" class="btn btn-statut btn-statut-ok">{{ t.statut_ok }}</button>
+                <button type="submit" name="statut" value="maintenance" class="btn btn-statut btn-statut-maintenance">{{ t.statut_maintenance }}</button>
+                <button type="submit" name="statut" value="panne" class="btn btn-statut btn-statut-panne">{{ t.statut_panne }}</button>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondaire" onclick="fermerModalStatutImprimanteListe()">{{ t.annuler }}</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}
 {% endblock %}
 
 {% block scripts %}
+{% if est_admin %}
 <script>
 function configurerFormulaireModalImprimante(form, url) {
-    if (!form) {
-        return;
-    }
+    if (!form) return;
     form.setAttribute('hx-post', url);
-    if (typeof htmx !== 'undefined') {
-        htmx.process(form);
-    }
-}
-
-function basculerCompteurImprimanteModal() {
-    const type = document.getElementById('imprimante-event-type');
-    const groupe = document.getElementById('imprimante-event-compteur-groupe');
-    const compteur = document.getElementById('imprimante-event-compteur');
-    if (!type || !groupe || !compteur) {
-        return;
-    }
-    const typesAvecCompteur = ['compteur', 'toner', 'maintenance', 'maintenance_terminee', 'panne', 'reparation'];
-    const afficher = typesAvecCompteur.includes(type.value);
-    groupe.style.display = afficher ? '' : 'none';
-    compteur.required = type.value === 'compteur';
+    if (typeof htmx !== 'undefined') htmx.process(form);
 }
 
 function ouvrirModalEvenementImprimante(bouton) {
     const modal = document.getElementById('modal-evenement-imprimante');
     const form = document.getElementById('form-evenement-imprimante');
     const sousTitre = document.getElementById('modal-imprimante-sous-titre');
-    const compteur = document.getElementById('imprimante-event-compteur');
-    if (!modal || !form || !bouton) {
-        return;
-    }
+    if (!modal || !form || !bouton) return;
 
     const imprimanteId = bouton.getAttribute('data-imprimante-id');
-    const compteurPages = bouton.getAttribute('data-compteur-pages') || '0';
     configurerFormulaireModalImprimante(form, '/imprimantes/' + imprimanteId + '/evenement');
-
     document.getElementById('imprimante-event-date').value = '{{ date_aujourdhui }}';
-    document.getElementById('imprimante-event-type').value = 'compteur';
-    if (compteur) {
-        compteur.min = compteurPages;
-        compteur.placeholder = compteurPages;
-        compteur.value = '';
-    }
+    document.getElementById('imprimante-event-type').value = 'toner';
     document.getElementById('imprimante-event-commentaire').value = '';
-    if (sousTitre) {
-        sousTitre.textContent = bouton.getAttribute('data-imprimante-nom') || '';
-    }
-
-    basculerCompteurImprimanteModal();
+    if (sousTitre) sousTitre.textContent = bouton.getAttribute('data-imprimante-nom') || '';
     modal.hidden = false;
     document.body.classList.add('modal-ouverte');
 }
 
 function fermerModalesImprimante() {
     const modal = document.getElementById('modal-evenement-imprimante');
-    if (modal) {
-        modal.hidden = true;
-    }
+    if (modal) modal.hidden = true;
+    document.body.classList.remove('modal-ouverte');
+}
+
+function ouvrirModalStatutImprimanteListe(id, nom) {
+    const modal = document.getElementById('modal-statut-imprimante-liste');
+    const form = document.getElementById('form-statut-imprimante-liste');
+    const sousTitre = document.getElementById('modal-statut-liste-sous-titre');
+    if (!modal || !form) return;
+    form.action = '/admin/imprimantes/' + id + '/statut';
+    if (sousTitre) sousTitre.textContent = nom || '';
+    modal.hidden = false;
+    document.body.classList.add('modal-ouverte');
+}
+
+function fermerModalStatutImprimanteListe() {
+    const modal = document.getElementById('modal-statut-imprimante-liste');
+    if (modal) modal.hidden = true;
     document.body.classList.remove('modal-ouverte');
 }
 
@@ -163,4 +161,5 @@ document.body.addEventListener('htmx:afterSwap', function(event) {
     }
 });
 </script>
+{% endif %}
 {% endblock %}

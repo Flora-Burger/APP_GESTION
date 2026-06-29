@@ -197,8 +197,13 @@ Resolution via `images_vehicules.py` et uploads admin :
 - `009` : journal `actif`, plusieurs utilisations/jour (utilisateurs differents)
 - `010` : suppression des colonnes kilometrage (refactoring)
 - `011` : `kilometrage_actuel` (vehicules), `kilometrage_actuel` et `kilometrage_jour` (journaux)
+- `013` : `utilisateur_assigne`, champs seguro, `talleres_referencia` (JSON), `telefono` sur utilisateurs
 
-## Script de reinitialisation (tests)
+## Roles admin / utilisateur (refonte)
+
+- **Admin** : assignation permanente via `utilisateur_assigne`, edition seguro et talleres de referencia.
+- **Utilisateur** : voit uniquement son vehicule assigne ; badge OK si ITV valide et pas au garage ; conserve la saisie journaliere km/carburant.
+- Plus d'assignation/liberation par l'utilisateur (`POST .../assigner`, `.../liberer` retires).
 
 Pour effacer les donnees du jour (journaux + immobilisations demarrees ce jour) :
 

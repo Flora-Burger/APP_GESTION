@@ -1,0 +1,57 @@
+{% if config_flotte %}
+<section class="vehicule-infos-flotte" aria-label="{{ t.infos_flotte }}">
+    <details class="carte-vehicule-details">
+        <summary class="carte-vehicule-details-summary">{{ t.detalles_seguro }}</summary>
+        <div class="carte-vehicule-details-contenu">
+            {% if config_flotte.seguro_contactos %}
+            <ul class="flotte-liste-contacts">
+                {% for contacto in config_flotte.seguro_contactos %}
+                {% if contacto.telefono %}
+                <li class="flotte-contact-item">
+                    <p class="flotte-contact-nom">{{ contacto.etiqueta or t.seguro_contacto }}</p>
+                    <a href="tel:{{ contacto.telefono }}" class="flotte-contact-telefono">{{ contacto.telefono }}</a>
+                </li>
+                {% endif %}
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="aide-champ">{{ t.aucun_contacto_seguro }}</p>
+            {% endif %}
+        </div>
+    </details>
+
+    <details class="carte-vehicule-details">
+        <summary class="carte-vehicule-details-summary">{{ t.talleres_referencia }}</summary>
+        <div class="carte-vehicule-details-contenu">
+            {% if config_flotte.talleres_referencia %}
+            {% set prev_ciudad = namespace(valeur='__aucune__') %}
+            {% for taller in config_flotte.talleres_referencia %}
+            {% set ciudad_norm = (taller.ciudad or '') | trim | lower %}
+            {% if ciudad_norm != prev_ciudad.valeur %}
+            {% if not loop.first %}</div>{% endif %}
+            <div class="flotte-taller-groupe">
+                <p class="taller-ciudad-titre">{{ taller.ciudad or '—' }}</p>
+            {% set prev_ciudad.valeur = ciudad_norm %}
+            {% endif %}
+                <article class="flotte-taller-item">
+                    <p class="flotte-taller-nom">{{ taller.nombre or '—' }}</p>
+                    {% if taller.telefono %}
+                    <a href="tel:{{ taller.telefono }}" class="flotte-taller-telefono">{{ taller.telefono }}</a>
+                    {% endif %}
+                    {% if taller.direccion %}
+                    {% set maps_query = taller.direccion ~ (', ' ~ taller.ciudad if taller.ciudad else '') %}
+                    <a href="https://www.google.com/maps/search/?api=1&query={{ maps_query | urlencode }}"
+                       class="flotte-taller-adresse"
+                       target="_blank"
+                       rel="noopener noreferrer">{{ taller.direccion }}</a>
+                    {% endif %}
+                </article>
+            {% endfor %}
+            </div>
+            {% else %}
+            <p class="aide-champ">{{ t.aucun_taller }}</p>
+            {% endif %}
+        </div>
+    </details>
+</section>
+{% endif %}

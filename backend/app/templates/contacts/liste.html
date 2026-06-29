@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block titre %}{{ t.liste_contacts }}{% endblock %}
+{% block body_class %}page-contacts-liste{% endblock %}
+
+{% block contenu %}
+<h1 class="titre-page">{{ t.liste_contacts }}</h1>
+
+<h2 class="historique-section-titre">{{ t.contacts_admins }}</h2>
+<div class="tableau-historique-conteneur">
+    <table class="tableau-historique tableau-admin-bleu">
+        <thead>
+            <tr>
+                <th>{{ t.nom }}</th>
+                <th>{{ t.identifiant }}</th>
+                <th>{{ t.correo_electronico }}</th>
+                <th>{{ t.telefono }}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for contact in contacts_admins %}
+            <tr class="ligne-contact-admin">
+                <td data-label="{{ t.nom }}">{{ contact.nom }}</td>
+                <td data-label="{{ t.identifiant }}">{{ contact.email }}</td>
+                <td data-label="{{ t.correo_electronico }}">
+                    {% if contact.correo %}
+                    <a href="mailto:{{ contact.correo }}" class="lien-telephone">{{ contact.correo }}</a>
+                    {% else %}
+                    —
+                    {% endif %}
+                </td>
+                <td data-label="{{ t.telefono }}">
+                    {% if contact.telefono %}
+                    <a href="tel:{{ contact.telefono }}" class="lien-telephone">{{ contact.telefono }}</a>
+                    {% else %}
+                    —
+                    {% endif %}
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="4" class="cellule-vide">{{ t.aucun_contact }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<h2 class="historique-section-titre">{{ t.contacts_utilisateurs }}</h2>
+<div class="tableau-historique-conteneur">
+    <table class="tableau-historique tableau-admin-bleu">
+        <thead>
+            <tr>
+                <th>{{ t.nom }}</th>
+                <th>{{ t.identifiant }}</th>
+                <th>{{ t.correo_electronico }}</th>
+                <th>{{ t.telefono }}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for contact in contacts_utilisateurs %}
+            <tr>
+                <td data-label="{{ t.nom }}">{{ contact.nom }}</td>
+                <td data-label="{{ t.identifiant }}">{{ contact.email }}</td>
+                <td data-label="{{ t.correo_electronico }}">
+                    {% if contact.correo %}
+                    <a href="mailto:{{ contact.correo }}" class="lien-telephone">{{ contact.correo }}</a>
+                    {% else %}
+                    —
+                    {% endif %}
+                </td>
+                <td data-label="{{ t.telefono }}">
+                    {% if contact.telefono %}
+                    <a href="tel:{{ contact.telefono }}" class="lien-telephone">{{ contact.telefono }}</a>
+                    {% else %}
+                    —
+                    {% endif %}
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="4" class="cellule-vide">{{ t.aucun_contact }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

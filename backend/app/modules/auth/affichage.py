@@ -1,6 +1,15 @@
 """Helpers d'affichage pour les utilisateurs."""
 
+import re
+
+from fastapi import Request
+
 from backend.app.modules.auth.modeles import Utilisateur
+
+_MOBILE_UA_PATTERN = re.compile(
+    r"Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile",
+    re.IGNORECASE,
+)
 
 
 def separer_nom_complet(nom: str | None) -> tuple[str, str]:
@@ -69,8 +78,11 @@ def preparer_utilisateurs_affichage(utilisateurs) -> list[dict]:
                 "id": utilisateur.id,
                 "email": utilisateur.email,
                 "nom": nom,
+                "telefono": (utilisateur.telefono or "").strip(),
+                "correo": (utilisateur.correo or "").strip(),
                 "role": role,
                 "est_actif": utilisateur.est_actif,
+                "est_admin": role == "admin",
             }
         )
     return lignes
@@ -85,15 +97,63 @@ def obtenir_nom_affichage(utilisateur: Utilisateur | None) -> str:
     return utilisateur.email
 
 
+def est_administrateur(utilisateur: Utilisateur | None) -> bool:
+    """True si l'utilisateur connecte est administrateur."""
+    if utilisateur is None:
+        return False
+    return normaliser_role(utilisateur.role) == "admin"
+
+
+def peut_enregistrer_evenement(utilisateur: Utilisateur | None) -> bool:
+    """Seul l'admin peut enregistrer des evenements materiel."""
+    return est_administrateur(utilisateur)
+
+
+def peut_modifier_ressource(utilisateur: Utilisateur | None) -> bool:
+    """Seul l'admin peut modifier les ressources (hors journal vehicule assigne)."""
+    return est_administrateur(utilisateur)
+
+
 def peut_actualizar_donnees_vehicule(
     utilisateur: Utilisateur | None,
-    utilisateur_jour: str | None,
+    utilisateur_assigne: str | None,
 ) -> bool:
     """True si administrateur ou utilisateur assigne au vehicule."""
     if utilisateur is None:
         return False
     if utilisateur.role == "admin":
         return True
-    if not utilisateur_jour or not utilisateur_jour.strip():
+    if not utilisateur_assigne or not utilisateur_assigne.strip():
         return False
-    return obtenir_nom_affichage(utilisateur) == utilisateur_jour.strip()
+    return (
+        obtenir_nom_affichage(utilisateur).strip().lower()
+        == utilisateur_assigne.strip().lower()
+    )
+
+
+def est_requete_mobile(request: Request) -> bool:
+    """Detecte une navigation depuis un appareil mobile."""
+    if request.headers.get("sec-ch-ua-mobile") == "?1":
+        return True
+    user_agent = request.headers.get("user-agent", "")
+    return bool(_MOBILE_UA_PATTERN.search(user_agent))
+
+
+def doit_rediriger_accueil_vers_vehicules(
+    utilisateur: Utilisateur | None, request: Request
+) -> bool:
+    """True si l'employe mobile ne doit pas voir la page d'accueil."""
+    return (
+        utilisateur is not None
+        and not est_administrateur(utilisateur)
+        and est_requete_mobile(request)
+    )
+
+
+def obtenir_destination_apres_connexion(
+    utilisateur: Utilisateur, request: Request
+) -> str:
+    """URL de redirection apres login selon le role et l'appareil."""
+    if doit_rediriger_accueil_vers_vehicules(utilisateur, request):
+        return "/vehicules"
+    return "/"

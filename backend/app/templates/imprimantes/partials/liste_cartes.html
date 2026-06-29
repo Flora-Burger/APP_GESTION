@@ -10,27 +10,42 @@
 {% if imprimantes %}
 <div class="grille-vehicules">
     {% for imp in imprimantes %}
+    {% set st = imp.statut if imp.statut is string else imp.statut.value %}
     <article class="carte-vehicule carte-imprimante">
         <div class="carte-vehicule-entete">
             <div class="carte-vehicule-entete-titre">
                 <h3>{{ imp.nom }}</h3>
+                {% if est_admin %}
                 <a href="/imprimantes/{{ imp.id }}/historique" class="btn-historique" title="{{ t.voir_historique }}">
                     {{ t.historique }}
                 </a>
+                {% endif %}
             </div>
             <div class="carte-vehicule-entete-statut">
-                {% if imp.statut == 'ok' or imp.statut.value == 'ok' %}
-                {% with variante='libre', libelle=t.statut_ok %}
-                {% include "partials/badge_statut.html" %}
-                {% endwith %}
-                {% elif imp.statut == 'panne' or imp.statut.value == 'panne' %}
-                {% with variante='occupe', libelle=t.statut_panne %}
-                {% include "partials/badge_statut.html" %}
-                {% endwith %}
+                {% if est_admin %}
+                <button
+                    type="button"
+                    class="badge-statut badge-statut-cliquable {% if st == 'ok' %}badge-libre{% elif st == 'panne' %}badge-occupe{% else %}badge-maintenance{% endif %}"
+                    onclick="ouvrirModalStatutImprimanteListe('{{ imp.id }}', '{{ imp.nom | e }}')"
+                >
+                    {% if st == 'ok' %}{{ t.statut_ok }}
+                    {% elif st == 'panne' %}{{ t.statut_panne }}
+                    {% else %}{{ t.statut_maintenance }}{% endif %}
+                </button>
                 {% else %}
-                {% with variante='maintenance', libelle=t.statut_maintenance %}
-                {% include "partials/badge_statut.html" %}
-                {% endwith %}
+                    {% if st == 'ok' %}
+                    {% with variante='libre', libelle=t.statut_ok %}
+                    {% include "partials/badge_statut.html" %}
+                    {% endwith %}
+                    {% elif st == 'panne' %}
+                    {% with variante='occupe', libelle=t.statut_panne %}
+                    {% include "partials/badge_statut.html" %}
+                    {% endwith %}
+                    {% else %}
+                    {% with variante='maintenance', libelle=t.statut_maintenance %}
+                    {% include "partials/badge_statut.html" %}
+                    {% endwith %}
+                    {% endif %}
                 {% endif %}
             </div>
         </div>
@@ -44,32 +59,29 @@
                 <span class="champ-label">{{ t.localisation }}</span>
                 <span class="champ-valeur">{{ imp.localisation }}</span>
             </div>
-            <div class="champ-info champ-info-principal">
-                <span class="champ-label">{{ t.compteur_pages }}</span>
-                <span class="champ-valeur compteur-pages">{{ imp.compteur_pages }} {{ t.pages_unite }}</span>
-            </div>
+            {% if imp.fecha_compra %}
             <div class="champ-info">
-                <span class="champ-label">{{ t.dernier_toner }}</span>
+                <span class="champ-label">{{ t.fecha_compra }}</span>
+                <span class="champ-valeur">{{ imp.fecha_compra.strftime('%d/%m/%Y') }}</span>
+            </div>
+            {% endif %}
+            {% if imp.tipo_tinta %}
+            <div class="champ-info">
+                <span class="champ-label">{{ t.tipo_tinta }}</span>
+                <span class="champ-valeur">{{ imp.tipo_tinta }}</span>
+            </div>
+            {% endif %}
+            {% if imp.facture_url %}
+            <div class="champ-info">
+                <span class="champ-label">{{ t.facture_label }}</span>
                 <span class="champ-valeur">
-                    {% if imp.date_dernier_toner %}
-                    {{ imp.date_dernier_toner.strftime('%d/%m/%Y') }}
-                    {% else %}
-                    -
-                    {% endif %}
+                    <a href="{{ imp.facture_url }}" class="lien-facture" target="_blank" rel="noopener noreferrer">{{ t.voir_facture }}</a>
                 </span>
             </div>
-            <div class="champ-info">
-                <span class="champ-label">{{ t.derniere_maintenance }}</span>
-                <span class="champ-valeur">
-                    {% if imp.date_derniere_maintenance %}
-                    {{ imp.date_derniere_maintenance.strftime('%d/%m/%Y') }}
-                    {% else %}
-                    -
-                    {% endif %}
-                </span>
-            </div>
+            {% endif %}
         </div>
 
+        {% if est_admin %}
         <div class="carte-vehicule-actions">
             <button
                 type="button"
@@ -77,11 +89,11 @@
                 onclick="ouvrirModalEvenementImprimante(this)"
                 data-imprimante-id="{{ imp.id }}"
                 data-imprimante-nom="{{ imp.nom | e }}"
-                data-compteur-pages="{{ imp.compteur_pages }}"
             >
                 {{ t.enregistrer_evenement }}
             </button>
         </div>
+        {% endif %}
     </article>
     {% endfor %}
 </div>

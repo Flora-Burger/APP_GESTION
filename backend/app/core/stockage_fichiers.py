@@ -13,13 +13,15 @@ from backend.app.core.config import RACINE_PROJET, obtenir_parametres
 
 logger = logging.getLogger(__name__)
 
-EXTENSIONS_AUTORISEES = {".jpg", ".jpeg", ".png", ".webp"}
+EXTENSIONS_IMAGE = {".jpg", ".jpeg", ".png", ".webp"}
+EXTENSIONS_DOCUMENT = EXTENSIONS_IMAGE | {".pdf"}
 TAILLE_MAX_OCTETS = 5 * 1024 * 1024
 MIME_PAR_EXTENSION = {
     ".jpg": "image/jpeg",
     ".jpeg": "image/jpeg",
     ".png": "image/png",
     ".webp": "image/webp",
+    ".pdf": "application/pdf",
 }
 URL_API_BLOB = "https://vercel.com/api/blob"
 VERSION_API_BLOB = "12"
@@ -30,31 +32,37 @@ SUFFIXES_URL_BLOB = (
 )
 
 
-async def _lire_fichier_upload(fichier: UploadFile) -> tuple[bytes, str]:
+async def _lire_fichier_upload(
+    fichier: UploadFile,
+    extensions_autorisees: set[str] | None = None,
+) -> tuple[bytes, str]:
     """Valide et lit le contenu d'un fichier upload."""
+    if extensions_autorisees is None:
+        extensions_autorisees = EXTENSIONS_IMAGE
+
     if not fichier.filename:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="photo_invalide",
+            detail="fichier_invalide",
         )
 
     extension = Path(fichier.filename).suffix.lower()
-    if extension not in EXTENSIONS_AUTORISEES:
+    if extension not in extensions_autorisees:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="photo_format_invalide",
+            detail="fichier_format_invalide",
         )
 
     contenu = await fichier.read()
     if not contenu:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="photo_invalide",
+            detail="fichier_invalide",
         )
     if len(contenu) > TAILLE_MAX_OCTETS:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="photo_trop_volumineuse",
+            detail="fichier_trop_volumineux",
         )
 
     return contenu, extension
@@ -113,13 +121,15 @@ class StockageFichiers:
     def _assurer_dossier_local(self) -> None:
         self.dossier_local.mkdir(parents=True, exist_ok=True)
 
-    def est_photo_geree(self, url: str) -> bool:
+    def est_fichier_gere(self, url: str) -> bool:
         """Indique si l'URL correspond a un fichier que l'app peut supprimer."""
         if not url:
             return False
         if url.startswith(self.prefixe_local):
             return True
         return _est_url_blob(url)
+
+    est_photo_geree = est_fichier_gere
 
     def chemin_fichier_local_depuis_url(self, url: str) -> Path | None:
         """Retourne le chemin disque d'une photo locale."""
@@ -129,8 +139,19 @@ class StockageFichiers:
         return RACINE_PROJET / "static" / relatif
 
     async def enregistrer(self, fichier: UploadFile) -> str:
-        """Enregistre une photo et retourne son URL publique."""
-        contenu, extension = await _lire_fichier_upload(fichier)
+        """Enregistre une image et retourne son URL publique."""
+        return await self._enregistrer_fichier(fichier, EXTENSIONS_IMAGE)
+
+    async def enregistrer_document(self, fichier: UploadFile) -> str:
+        """Enregistre une image ou un PDF et retourne son URL publique."""
+        return await self._enregistrer_fichier(fichier, EXTENSIONS_DOCUMENT)
+
+    async def _enregistrer_fichier(
+        self,
+        fichier: UploadFile,
+        extensions_autorisees: set[str],
+    ) -> str:
+        contenu, extension = await _lire_fichier_upload(fichier, extensions_autorisees)
         parametres = obtenir_parametres()
 
         if parametres.utilise_blob():
@@ -145,8 +166,8 @@ class StockageFichiers:
         return self._enregistrer_local(contenu, extension)
 
     def supprimer(self, url: str) -> None:
-        """Supprime une photo locale ou sur Vercel Blob."""
-        if not self.est_photo_geree(url):
+        """Supprime un fichier local ou sur Vercel Blob."""
+        if not self.est_fichier_gere(url):
             return
 
         if url.startswith(self.prefixe_local):

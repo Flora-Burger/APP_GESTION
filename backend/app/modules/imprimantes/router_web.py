@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 
 from backend.app.core.database import obtenir_session
 from backend.app.core.dependances import contexte_template, templates
+from backend.app.modules.auth.affichage import peut_enregistrer_evenement
 from backend.app.modules.imprimantes.schemas import (
     EvenementCreate,
     FiltreStatutImprimante,
@@ -50,6 +51,7 @@ def page_imprimantes(
     request: Request,
     recherche: str | None = None,
     statut: str | None = None,
+    message: str | None = None,
     service: ImprimanteService = Depends(_obtenir_service),
 ):
     """Page principale de gestion des imprimantes."""
@@ -68,6 +70,7 @@ def page_imprimantes(
             },
             date_aujourdhui=date.today().isoformat(),
             types_evenement=TypeEvenement,
+            message=message,
         ),
     )
 
@@ -112,35 +115,29 @@ def enregistrer_evenement(
     imprimante_id: int,
     date_evenement: str = Form(...),
     type_evenement: str = Form(...),
-    compteur_pages: str = Form(default=""),
     commentaire: str = Form(default=""),
     recherche: str = Form(default=""),
     statut: str = Form(default=""),
     service: ImprimanteService = Depends(_obtenir_service),
 ):
-    """Enregistre un evenement depuis le formulaire web."""
+    """Enregistre un evenement depuis le formulaire web (admin uniquement)."""
     message_succes = None
     message_erreur = None
 
-    compteur_val = None
-    if compteur_pages.strip():
-        try:
-            compteur_val = max(0, int(compteur_pages.strip()))
-        except ValueError:
-            message_erreur = "erreur_evenement"
-
-    if message_erreur is None:
+    utilisateur = getattr(request.state, "utilisateur", None)
+    if not peut_enregistrer_evenement(utilisateur):
+        message_erreur = "acces_refuse"
+    else:
         try:
             donnees = EvenementCreate(
                 date_evenement=date.fromisoformat(date_evenement),
                 type_evenement=TypeEvenement(type_evenement),
-                compteur_pages=compteur_val,
                 commentaire=commentaire.strip() or None,
             )
             service.enregistrer_evenement(imprimante_id, donnees)
             message_succes = "evenement_enregistre"
         except ValidationError:
-            message_erreur = "compteur_obligatoire"
+            message_erreur = "erreur_evenement"
         except HTTPException as exc:
             detail = exc.detail if isinstance(exc.detail, str) else "erreur_evenement"
             message_erreur = detail

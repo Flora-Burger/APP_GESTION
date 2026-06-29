@@ -4,15 +4,28 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#0f3d7a">
-    <link rel="apple-touch-icon" href="/static/pwa/icon-192.png">
     <title>{% block titre %}{{ t.app_titre }}{% endblock %} - {{ nom_entreprise }}</title>
-    <link rel="stylesheet" href="/static/css/style.css?v=67">
-    <link rel="stylesheet" href="/static/css/mobile.css?v=11">
+    <link rel="stylesheet" href="/static/css/style.css?v=97">
+    <link rel="stylesheet" href="/static/css/mobile.css?v=32">
     <script src="https://unpkg.com/htmx.org@2.0.4"></script>
     {% block head_extra %}{% endblock %}
 </head>
 <body class="{% block body_class %}{% endblock %}">
     <header class="en-tete">
+        {% if utilisateur_courant %}
+        <button
+            type="button"
+            class="btn-menu-lateral"
+            onclick="toggleMenuLateral()"
+            aria-label="{{ t.ouvrir_menu }}"
+            aria-expanded="false"
+            aria-controls="menu-lateral"
+        >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path d="M4 7h16M4 12h16M4 17h16"/>
+            </svg>
+        </button>
+        {% endif %}
         <a href="/">
             <img src="{{ logo_url }}" alt="{{ nom_entreprise }}" class="en-tete-logo">
         </a>
@@ -24,6 +37,8 @@
             <span class="en-tete-utilisateur">{{ nom_utilisateur_courant }}</span>
             {% if est_admin %}
             <a href="/admin/users" class="en-tete-lien">{{ t.admin_utilisateurs }}</a>
+            {% else %}
+            <a href="/contacts" class="en-tete-lien">{{ t.liste_contacts }}</a>
             {% endif %}
             <a href="/logout" class="en-tete-lien">{{ t.deconnexion }}</a>
         </nav>
@@ -31,14 +46,57 @@
     </header>
 
     <main class="conteneur">
+        {% if utilisateur_courant %}
+        {% include "partials/lien_retour_accueil.html" %}
+        {% endif %}
         {% block contenu %}{% endblock %}
     </main>
 
     {% if utilisateur_courant %}
-    {% include "partials/nav_mobile.html" %}
+    {% include "partials/menu_lateral_mobile.html" %}
     {% endif %}
 
     <script>
+    function ouvrirMenuLateral() {
+        var menu = document.getElementById('menu-lateral');
+        var bouton = document.querySelector('.btn-menu-lateral');
+        if (!menu) {
+            return;
+        }
+        menu.setAttribute('aria-hidden', 'false');
+        document.body.classList.add('menu-lateral-ouvert');
+        if (bouton) {
+            bouton.setAttribute('aria-expanded', 'true');
+        }
+    }
+
+    function fermerMenuLateral() {
+        var menu = document.getElementById('menu-lateral');
+        var bouton = document.querySelector('.btn-menu-lateral');
+        if (!menu) {
+            return;
+        }
+        menu.setAttribute('aria-hidden', 'true');
+        document.body.classList.remove('menu-lateral-ouvert');
+        if (bouton) {
+            bouton.setAttribute('aria-expanded', 'false');
+        }
+    }
+
+    function toggleMenuLateral() {
+        if (document.body.classList.contains('menu-lateral-ouvert')) {
+            fermerMenuLateral();
+        } else {
+            ouvrirMenuLateral();
+        }
+    }
+
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            fermerMenuLateral();
+        }
+    });
+
     document.addEventListener('click', function(event) {
         var bouton = event.target.closest('.btn-filtros-toggle');
         if (!bouton) {

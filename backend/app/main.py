@@ -11,7 +11,6 @@ from starlette.responses import RedirectResponse
 from backend.app.core.auth_middleware import AuthMiddleware
 from backend.app.core.config import RACINE_PROJET, obtenir_parametres
 from backend.app.core.database import SessionLocal
-from backend.app.core.router_pwa import router as router_pwa
 from backend.app.modules.accueil.router_web import router as router_accueil
 from backend.app.modules.auth.router_admin import router as router_admin
 from backend.app.modules.auth.router_web import router as router_auth
@@ -78,9 +77,6 @@ async def erreur_validation_formulaire_web(request: Request, exc: RequestValidat
 _dossier_static = RACINE_PROJET / "static"
 if _dossier_static.is_dir():
     app.mount("/static", StaticFiles(directory=str(_dossier_static)), name="static")
-
-# PWA (manifeste et service worker publics)
-app.include_router(router_pwa)
 
 # Auth (login public via middleware)
 app.include_router(router_auth)

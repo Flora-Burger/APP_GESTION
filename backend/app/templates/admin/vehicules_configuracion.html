@@ -1,0 +1,223 @@
+{% extends "base.html" %}
+
+{% block titre %}{{ t.configuracion_vehicules }}{% endblock %}
+{% block body_class %}page-config-vehicules{% endblock %}
+
+{% block contenu %}
+<p class="lien-retour">
+    <a href="/admin/vehicules">{{ t.retour_liste }}</a>
+</p>
+
+<h1 class="titre-page titre-config-vehicules">{{ t.configuracion_vehicules }}</h1>
+
+{% if message %}
+<div class="message message-succes">{{ t[message] }}</div>
+{% endif %}
+{% if erreur %}
+<div class="message message-erreur">{{ t[erreur] }}</div>
+{% endif %}
+
+<section class="admin-section">
+    <form method="post" action="/admin/vehicules/configuracion" class="formulaire-admin" id="form-config-vehicules">
+        <h3 class="sous-titre-section">{{ t.detalles_seguro }}</h3>
+
+        <div class="config-ajout-bloc">
+            <div class="grille-form-admin">
+                <div class="champ-form">
+                    <label for="nouveau-contacto-etiqueta">{{ t.seguro_etiqueta }}</label>
+                    <input type="text" id="nouveau-contacto-etiqueta" maxlength="100" placeholder="{{ t.seguro_etiqueta_placeholder }}">
+                </div>
+                <div class="champ-form">
+                    <label for="nouveau-contacto-telefono">{{ t.telefono }}</label>
+                    <input type="tel" id="nouveau-contacto-telefono" maxlength="30">
+                </div>
+            </div>
+            <button type="button" class="btn btn-secondaire config-btn-crear" id="btn-crear-contacto">{{ t.crear_contacto }}</button>
+        </div>
+
+        <div class="tableau-historique-conteneur">
+            <table class="tableau-historique tableau-admin-bleu">
+                <thead>
+                    <tr>
+                        <th scope="col">{{ t.seguro_etiqueta }}</th>
+                        <th scope="col">{{ t.telefono }}</th>
+                        <th scope="col" class="colonne-actions">{{ t.actions }}</th>
+                    </tr>
+                </thead>
+                <tbody id="liste-contactos-seguro">
+                    {% for contacto in config.seguro_contactos %}
+                    <tr>
+                        <td data-label="{{ t.seguro_etiqueta }}">
+                            <input type="text" class="champ-tableau" name="contacto_etiqueta" value="{{ contacto.etiqueta or '' }}" maxlength="100" placeholder="{{ t.seguro_etiqueta_placeholder }}">
+                        </td>
+                        <td data-label="{{ t.telefono }}">
+                            <input type="tel" class="champ-tableau" name="contacto_telefono" value="{{ contacto.telefono or '' }}" maxlength="30">
+                        </td>
+                        <td data-label="{{ t.actions }}" class="cellule-actions">
+                            <button type="button" class="btn btn-danger btn-petit" onclick="supprimerLigneConfig(this)">{{ t.supprimer }}</button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <h3 class="sous-titre-section config-section-talleres">{{ t.talleres_referencia }}</h3>
+
+        <div class="config-ajout-bloc">
+            <div class="grille-form-admin">
+                <div class="champ-form">
+                    <label for="nouveau-taller-ciudad">{{ t.ciudad }}</label>
+                    <input type="text" id="nouveau-taller-ciudad" maxlength="100">
+                </div>
+                <div class="champ-form">
+                    <label for="nouveau-taller-nombre">{{ t.taller_nombre }}</label>
+                    <input type="text" id="nouveau-taller-nombre" maxlength="200">
+                </div>
+                <div class="champ-form">
+                    <label for="nouveau-taller-telefono">{{ t.taller_telefono }}</label>
+                    <input type="tel" id="nouveau-taller-telefono" maxlength="30">
+                </div>
+                <div class="champ-form champ-form-large">
+                    <label for="nouveau-taller-direccion">{{ t.taller_direccion }}</label>
+                    <input type="text" id="nouveau-taller-direccion" maxlength="300">
+                </div>
+            </div>
+            <button type="button" class="btn btn-secondaire config-btn-crear" id="btn-crear-taller">{{ t.crear_taller }}</button>
+        </div>
+
+        <div class="tableau-historique-conteneur">
+            <table class="tableau-historique tableau-admin-bleu" id="table-talleres">
+                <thead>
+                    <tr>
+                        <th scope="col">{{ t.ciudad }}</th>
+                        <th scope="col">{{ t.taller_nombre }}</th>
+                        <th scope="col">{{ t.taller_telefono }}</th>
+                        <th scope="col">{{ t.taller_direccion }}</th>
+                        <th scope="col" class="colonne-actions">{{ t.actions }}</th>
+                    </tr>
+                </thead>
+                <tbody id="liste-talleres">
+                    {% for taller in config.talleres_referencia %}
+                    <tr>
+                        <td data-label="{{ t.ciudad }}">
+                            <input type="text" class="champ-tableau" name="taller_ciudad" value="{{ taller.ciudad or '' }}" maxlength="100">
+                        </td>
+                        <td data-label="{{ t.taller_nombre }}">
+                            <input type="text" class="champ-tableau" name="taller_nombre" value="{{ taller.nombre or '' }}" maxlength="200">
+                        </td>
+                        <td data-label="{{ t.taller_telefono }}">
+                            <input type="tel" class="champ-tableau" name="taller_telefono" value="{{ taller.telefono or '' }}" maxlength="30">
+                        </td>
+                        <td data-label="{{ t.taller_direccion }}">
+                            <input type="text" class="champ-tableau" name="taller_direccion" value="{{ taller.direccion or '' }}" maxlength="300">
+                        </td>
+                        <td data-label="{{ t.actions }}" class="cellule-actions">
+                            <button type="button" class="btn btn-danger btn-petit" onclick="supprimerLigneConfig(this)">{{ t.supprimer }}</button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="actions-formulaire config-actions-formulaire">
+            <button type="submit" class="btn btn-primaire">{{ t.enregistrer }}</button>
+            <a href="/admin/vehicules" class="btn btn-secondaire">{{ t.annuler }}</a>
+        </div>
+    </form>
+</section>
+
+<template id="template-ligne-contacto">
+    <tr>
+        <td data-label="{{ t.seguro_etiqueta }}">
+            <input type="text" class="champ-tableau" name="contacto_etiqueta" maxlength="100" placeholder="{{ t.seguro_etiqueta_placeholder }}">
+        </td>
+        <td data-label="{{ t.telefono }}">
+            <input type="tel" class="champ-tableau" name="contacto_telefono" maxlength="30">
+        </td>
+        <td data-label="{{ t.actions }}" class="cellule-actions">
+            <button type="button" class="btn btn-danger btn-petit" onclick="supprimerLigneConfig(this)">{{ t.supprimer }}</button>
+        </td>
+    </tr>
+</template>
+
+<template id="template-ligne-taller">
+    <tr>
+        <td data-label="{{ t.ciudad }}">
+            <input type="text" class="champ-tableau" name="taller_ciudad" maxlength="100">
+        </td>
+        <td data-label="{{ t.taller_nombre }}">
+            <input type="text" class="champ-tableau" name="taller_nombre" maxlength="200">
+        </td>
+        <td data-label="{{ t.taller_telefono }}">
+            <input type="tel" class="champ-tableau" name="taller_telefono" maxlength="30">
+        </td>
+        <td data-label="{{ t.taller_direccion }}">
+            <input type="text" class="champ-tableau" name="taller_direccion" maxlength="300">
+        </td>
+        <td data-label="{{ t.actions }}" class="cellule-actions">
+            <button type="button" class="btn btn-danger btn-petit" onclick="supprimerLigneConfig(this)">{{ t.supprimer }}</button>
+        </td>
+    </tr>
+</template>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+    window.supprimerLigneConfig = function (bouton) {
+        const ligne = bouton.closest('tr');
+        if (ligne) ligne.remove();
+    };
+
+    function ajouterContacto(etiqueta, telefono) {
+        const tpl = document.getElementById('template-ligne-contacto');
+        const ligne = tpl.content.firstElementChild.cloneNode(true);
+        ligne.querySelector('[name="contacto_etiqueta"]').value = etiqueta;
+        ligne.querySelector('[name="contacto_telefono"]').value = telefono;
+        document.getElementById('liste-contactos-seguro').appendChild(ligne);
+    }
+
+    function ajouterTaller(ciudad, nombre, telefono, direccion) {
+        const tpl = document.getElementById('template-ligne-taller');
+        const ligne = tpl.content.firstElementChild.cloneNode(true);
+        ligne.querySelector('[name="taller_ciudad"]').value = ciudad;
+        ligne.querySelector('[name="taller_nombre"]').value = nombre;
+        ligne.querySelector('[name="taller_telefono"]').value = telefono;
+        ligne.querySelector('[name="taller_direccion"]').value = direccion;
+        document.getElementById('liste-talleres').appendChild(ligne);
+    }
+
+    document.getElementById('btn-crear-contacto').addEventListener('click', function () {
+        const etiqueta = document.getElementById('nouveau-contacto-etiqueta').value.trim();
+        const telefono = document.getElementById('nouveau-contacto-telefono').value.trim();
+        if (!telefono) {
+            document.getElementById('nouveau-contacto-telefono').focus();
+            return;
+        }
+        ajouterContacto(etiqueta, telefono);
+        document.getElementById('nouveau-contacto-etiqueta').value = '';
+        document.getElementById('nouveau-contacto-telefono').value = '';
+        document.getElementById('nouveau-contacto-etiqueta').focus();
+    });
+
+    document.getElementById('btn-crear-taller').addEventListener('click', function () {
+        const ciudad = document.getElementById('nouveau-taller-ciudad').value.trim();
+        const nombre = document.getElementById('nouveau-taller-nombre').value.trim();
+        const telefono = document.getElementById('nouveau-taller-telefono').value.trim();
+        const direccion = document.getElementById('nouveau-taller-direccion').value.trim();
+        if (!nombre && !ciudad) {
+            document.getElementById('nouveau-taller-nombre').focus();
+            return;
+        }
+        ajouterTaller(ciudad, nombre, telefono, direccion);
+        document.getElementById('nouveau-taller-ciudad').value = '';
+        document.getElementById('nouveau-taller-nombre').value = '';
+        document.getElementById('nouveau-taller-telefono').value = '';
+        document.getElementById('nouveau-taller-direccion').value = '';
+        document.getElementById('nouveau-taller-ciudad').focus();
+    });
+})();
+</script>
+{% endblock %}

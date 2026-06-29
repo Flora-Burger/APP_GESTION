@@ -2,10 +2,18 @@
 
 from datetime import date
 
-from fastapi import HTTPException, status
-from pydantic import ValidationError
+from fastapi import HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
 
+from backend.app.modules.ordinateurs.donnees_json import (
+    LicenceLogiciel,
+    parser_licences,
+    serialiser_licences,
+)
+from backend.app.modules.ordinateurs.fichiers_factures import (
+    enregistrer_facture_ordinateur,
+    supprimer_facture_ordinateur,
+)
 from backend.app.modules.ordinateurs.modeles import Ordinateur, OrdinateurEvenement
 from backend.app.modules.ordinateurs.repository import OrdinateurRepository
 from backend.app.modules.ordinateurs.schemas import (
@@ -18,9 +26,7 @@ from backend.app.modules.ordinateurs.schemas import (
     OrdinateurUpdate,
     ResultatRecherche,
     StatutOrdinateur,
-    TypeEvenement,
 )
-from backend.app.modules.ordinateurs.statut_ordinateur import calculer_statut_depuis_evenements
 
 
 class OrdinateurService:
@@ -29,35 +35,35 @@ class OrdinateurService:
     def __init__(self, session: Session):
         self.repo = OrdinateurRepository(session)
 
-    def _synchroniser_statut(self, ordinateur: Ordinateur) -> bool:
-        """Met a jour le statut stocke selon l'historique. Retourne True si modifie."""
-        nouveau = calculer_statut_depuis_evenements(
-            ordinateur.evenements,
-            ordinateur.utilisateur_assigne,
-        ).value
-        if ordinateur.statut == nouveau:
-            return False
-        ordinateur.statut = nouveau
-        return True
-
     def _construire_reponse(self, ordinateur: Ordinateur) -> OrdinateurResponse:
-        """Construit la reponse (le statut doit etre synchronise avant)."""
-        return OrdinateurResponse.model_validate(ordinateur)
+        return OrdinateurResponse(
+            id=ordinateur.id,
+            nom=ordinateur.nom,
+            numero_serie=ordinateur.numero_serie,
+            marque=ordinateur.marque,
+            modele=ordinateur.modele,
+            utilisateur_assigne=ordinateur.utilisateur_assigne,
+            localisation=ordinateur.localisation,
+            statut=ordinateur.statut,
+            systeme_exploitation=ordinateur.systeme_exploitation,
+            processeur=ordinateur.processeur,
+            memoire_ram=ordinateur.memoire_ram,
+            capacite_stockage=ordinateur.capacite_stockage,
+            date_acquisition=ordinateur.date_acquisition,
+            garantie=ordinateur.garantie,
+            facture_url=ordinateur.facture_url,
+            licences=parser_licences(ordinateur.licences),
+            cree_le=ordinateur.cree_le,
+        )
 
     def _appliquer_filtres(
         self,
         ordinateurs: list[Ordinateur],
         statut: FiltreStatutOrdinateur | None = None,
     ) -> list[Ordinateur]:
-        """Applique les filtres sur la liste."""
         if statut is None:
             return ordinateurs
-        return [
-            o
-            for o in ordinateurs
-            if calculer_statut_depuis_evenements(o.evenements, o.utilisateur_assigne).value
-            == statut.value
-        ]
+        return [o for o in ordinateurs if o.statut == statut.value]
 
     def _verifier_uniques(
         self,
@@ -65,7 +71,6 @@ class OrdinateurService:
         numero_serie: str | None,
         ordinateur_id: int | None = None,
     ) -> None:
-        """Verifie l'unicite du nom et du numero de serie."""
         autre = self.repo.obtenir_par_nom(nom)
         if autre is not None and autre.id != ordinateur_id:
             raise HTTPException(
@@ -81,9 +86,11 @@ class OrdinateurService:
                 )
 
     def _appliquer_donnees_maitres(
-        self, ordinateur: Ordinateur, donnees: OrdinateurCreate | OrdinateurUpdate
+        self,
+        ordinateur: Ordinateur,
+        donnees: OrdinateurCreate | OrdinateurUpdate,
+        licences: list[LicenceLogiciel] | None = None,
     ) -> None:
-        """Applique les champs modifiables par l'admin."""
         ordinateur.nom = donnees.nom.strip()
         ordinateur.numero_serie = donnees.numero_serie.strip() if donnees.numero_serie else None
         ordinateur.marque = donnees.marque.strip()
@@ -102,41 +109,29 @@ class OrdinateurService:
         )
         ordinateur.date_acquisition = donnees.date_acquisition
         ordinateur.garantie = donnees.garantie.strip() if donnees.garantie else None
+        if licences is not None:
+            ordinateur.licences = serialiser_licences(licences)
 
     def lister(
         self,
         recherche: str | None = None,
         statut: FiltreStatutOrdinateur | None = None,
     ) -> list[OrdinateurResponse]:
-        """Liste les ordinateurs avec filtres."""
         terme = recherche.strip() if recherche else ""
         if terme:
             ordinateurs = self.repo.rechercher(terme)
         else:
             ordinateurs = self.repo.obtenir_tous()
-
         ordinateurs = self._appliquer_filtres(ordinateurs, statut)
-        modifie = False
-        reponses = []
-        for ordinateur in ordinateurs:
-            if self._synchroniser_statut(ordinateur):
-                modifie = True
-            reponses.append(self._construire_reponse(ordinateur))
-        if modifie:
-            self.repo.session.commit()
-        return reponses
+        return [self._construire_reponse(o) for o in ordinateurs]
 
     def obtenir_detail(self, ordinateur_id: int) -> OrdinateurDetailResponse:
-        """Retourne le detail avec historique."""
         ordinateur = self.repo.obtenir_par_id(ordinateur_id)
         if ordinateur is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="ordinateur_introuvable",
             )
-
-        self._synchroniser_statut(ordinateur)
-        self.repo.sauvegarder(ordinateur)
 
         evenements = sorted(
             ordinateur.evenements,
@@ -150,7 +145,6 @@ class OrdinateurService:
         )
 
     def creer(self, donnees: OrdinateurCreate) -> OrdinateurResponse:
-        """Cree un ordinateur."""
         nom = donnees.nom.strip()
         if not nom:
             raise HTTPException(
@@ -167,11 +161,14 @@ class OrdinateurService:
         return self._construire_reponse(ordinateur)
 
     def creer_admin(self, donnees: OrdinateurCreate) -> OrdinateurResponse:
-        """Cree un ordinateur depuis l'admin."""
         return self.creer(donnees)
 
-    def modifier(self, ordinateur_id: int, donnees: OrdinateurUpdate) -> OrdinateurResponse:
-        """Modifie les donnees maitres (sans le statut, deduit des evenements)."""
+    def modifier(
+        self,
+        ordinateur_id: int,
+        donnees: OrdinateurUpdate,
+        licences: list[LicenceLogiciel] | None = None,
+    ) -> OrdinateurResponse:
         ordinateur = self.repo.obtenir_par_id(ordinateur_id)
         if ordinateur is None:
             raise HTTPException(
@@ -181,47 +178,73 @@ class OrdinateurService:
 
         numero_serie = donnees.numero_serie.strip() if donnees.numero_serie else None
         self._verifier_uniques(donnees.nom.strip(), numero_serie, ordinateur_id)
-        self._appliquer_donnees_maitres(ordinateur, donnees)
-        self._synchroniser_statut(ordinateur)
+        self._appliquer_donnees_maitres(ordinateur, donnees, licences=licences)
         ordinateur = self.repo.sauvegarder(ordinateur)
         return self._construire_reponse(ordinateur)
 
-    def modifier_admin(
+    async def modifier_avec_facture(
         self,
         ordinateur_id: int,
         donnees: OrdinateurUpdate,
+        facture_fichier: UploadFile | None = None,
+        licences: list[LicenceLogiciel] | None = None,
     ) -> OrdinateurResponse:
-        """Met a jour un ordinateur depuis l'admin."""
-        return self.modifier(ordinateur_id, donnees)
-
-    def supprimer(self, ordinateur_id: int) -> None:
-        """Supprime un ordinateur."""
         ordinateur = self.repo.obtenir_par_id(ordinateur_id)
         if ordinateur is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="ordinateur_introuvable",
             )
+
+        reponse = self.modifier(ordinateur_id, donnees, licences=licences)
+        if facture_fichier is not None and facture_fichier.filename:
+            ancienne = ordinateur.facture_url
+            nouvelle = await enregistrer_facture_ordinateur(facture_fichier)
+            ordinateur.facture_url = nouvelle
+            self.repo.sauvegarder(ordinateur)
+            if ancienne:
+                supprimer_facture_ordinateur(ancienne)
+            return self._construire_reponse(ordinateur)
+        return reponse
+
+    def modifier_admin(
+        self,
+        ordinateur_id: int,
+        donnees: OrdinateurUpdate,
+        licences: list[LicenceLogiciel] | None = None,
+    ) -> OrdinateurResponse:
+        return self.modifier(ordinateur_id, donnees, licences=licences)
+
+    def modifier_statut(
+        self,
+        ordinateur_id: int,
+        statut: StatutOrdinateur,
+    ) -> OrdinateurResponse:
+        ordinateur = self.repo.obtenir_par_id(ordinateur_id)
+        if ordinateur is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="ordinateur_introuvable",
+            )
+        ordinateur.statut = statut.value
+        ordinateur = self.repo.sauvegarder(ordinateur)
+        return self._construire_reponse(ordinateur)
+
+    def supprimer(self, ordinateur_id: int) -> None:
+        ordinateur = self.repo.obtenir_par_id(ordinateur_id)
+        if ordinateur is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="ordinateur_introuvable",
+            )
+        facture = ordinateur.facture_url
         self.repo.supprimer(ordinateur)
-
-    def _appliquer_effet_evenement(
-        self, ordinateur: Ordinateur, donnees: EvenementCreate
-    ) -> None:
-        """Met a jour l'ordinateur selon le type d'evenement."""
-        type_evt = donnees.type_evenement
-        responsable = (
-            donnees.utilisateur_responsable.strip()
-            if donnees.utilisateur_responsable
-            else None
-        )
-
-        if type_evt == TypeEvenement.CHANGEMENT_UTILISATEUR:
-            ordinateur.utilisateur_assigne = responsable
+        if facture:
+            supprimer_facture_ordinateur(facture)
 
     def enregistrer_evenement(
         self, ordinateur_id: int, donnees: EvenementCreate
     ) -> EvenementResponse:
-        """Enregistre un evenement et met a jour l'ordinateur."""
         ordinateur = self.repo.obtenir_par_id(ordinateur_id)
         if ordinateur is None:
             raise HTTPException(
@@ -234,58 +257,38 @@ class OrdinateurService:
             date_evenement=donnees.date_evenement,
             type_evenement=donnees.type_evenement.value,
             commentaire=donnees.commentaire.strip() if donnees.commentaire else None,
-            utilisateur_responsable=(
-                donnees.utilisateur_responsable.strip()
-                if donnees.utilisateur_responsable
-                else None
-            ),
+            utilisateur_responsable=None,
         )
         evenement = self.repo.ajouter_evenement(evenement)
-        self._appliquer_effet_evenement(ordinateur, donnees)
-        self._synchroniser_statut(ordinateur)
         self.repo.sauvegarder(ordinateur)
         self.repo.session.refresh(evenement)
-
         return EvenementResponse.model_validate(evenement)
 
     def enregistrer_evenement_depuis_formulaire(
         self, ordinateur_id: int, donnees: EvenementCreate
     ) -> EvenementResponse:
-        """Enregistre un evenement avec gestion des erreurs de validation."""
-        try:
-            return self.enregistrer_evenement(ordinateur_id, donnees)
-        except ValidationError as exc:
-            if any(e.get("type") == "value_error" for e in exc.errors()):
-                raise HTTPException(
-                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                    detail="erreur_evenement",
-                ) from exc
-            raise
+        return self.enregistrer_evenement(ordinateur_id, donnees)
 
     def rechercher_global(self, terme: str) -> list[ResultatRecherche]:
-        """Recherche globale pour la page d'accueil."""
         if not terme.strip():
             return []
 
         ordinateurs = self.repo.rechercher(terme)
         resultats: list[ResultatRecherche] = []
         libelles_statut = {
-            StatutOrdinateur.OK: "OK",
-            StatutOrdinateur.EN_MAINTENANCE: "Mantenimiento",
-            StatutOrdinateur.EN_PANNE: "Averia",
+            StatutOrdinateur.OK.value: "OK",
+            StatutOrdinateur.EN_MAINTENANCE.value: "Mantenimiento",
+            StatutOrdinateur.EN_PANNE.value: "Averia",
         }
 
         for ordi in ordinateurs:
-            statut = calculer_statut_depuis_evenements(
-                ordi.evenements, ordi.utilisateur_assigne
-            )
             utilisateur = ordi.utilisateur_assigne or "-"
             resultats.append(
                 ResultatRecherche(
                     module_id="ordinateurs",
                     module_libelle="Ordenadores",
                     titre=f"{ordi.nom} ({ordi.marque} {ordi.modele})",
-                    sous_titre=f"{ordi.localisation} - {utilisateur} - {libelles_statut[statut]}",
+                    sous_titre=f"{ordi.localisation} - {utilisateur} - {libelles_statut.get(ordi.statut, ordi.statut)}",
                     route_web="/ordinateurs",
                 )
             )

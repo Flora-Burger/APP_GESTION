@@ -2,13 +2,14 @@
 
 from datetime import date
 
-from fastapi import APIRouter, Depends, Form, HTTPException, Request
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
 
 from backend.app.core.admin_web import verifier_admin_web
 from backend.app.core.database import obtenir_session
 from backend.app.core.dependances import contexte_template, templates
+from backend.app.modules.ordinateurs.donnees_json import LicenceLogiciel
 from backend.app.modules.ordinateurs.schemas import OrdinateurCreate, OrdinateurUpdate, StatutOrdinateur
 from backend.app.modules.ordinateurs.service import OrdinateurService
 
@@ -20,10 +21,25 @@ def _obtenir_service(session: Session = Depends(obtenir_session)) -> OrdinateurS
 
 
 def _parse_date(valeur: str) -> date | None:
-    """Parse une date ISO ou retourne None."""
     if not valeur or not valeur.strip():
         return None
     return date.fromisoformat(valeur.strip())
+
+
+def _parser_licences_formulaire(
+    licence_nom: list[str] | None = None,
+    licence_expiration: list[str] | None = None,
+) -> list[LicenceLogiciel]:
+    noms = licence_nom or []
+    expirations = licence_expiration or []
+    licences: list[LicenceLogiciel] = []
+    for i, nom in enumerate(noms):
+        nom_net = (nom or "").strip()
+        if not nom_net:
+            continue
+        exp = expirations[i].strip() if i < len(expirations) and expirations[i] else None
+        licences.append(LicenceLogiciel(nom=nom_net, expiration=exp or None))
+    return licences
 
 
 @router.get("/admin/ordinateurs", response_class=HTMLResponse)
@@ -34,7 +50,6 @@ def page_admin_ordinateurs(
     message: str | None = None,
     erreur: str | None = None,
 ):
-    """Liste et creation d'ordinateurs."""
     redirection = verifier_admin_web(request)
     if redirection:
         return redirection
@@ -61,7 +76,6 @@ def partial_liste_admin_ordinateurs(
     recherche: str | None = None,
     service: OrdinateurService = Depends(_obtenir_service),
 ):
-    """Fragment HTMX de la liste admin des ordinateurs."""
     redirection = verifier_admin_web(request)
     if redirection:
         return redirection
@@ -92,7 +106,6 @@ def creer_ordinateur_admin(
     garantie: str = Form(default=""),
     service: OrdinateurService = Depends(_obtenir_service),
 ):
-    """Cree un ordinateur."""
     redirection = verifier_admin_web(request)
     if redirection:
         return redirection
@@ -116,10 +129,7 @@ def creer_ordinateur_admin(
         return RedirectResponse(url="/admin/ordinateurs?message=ordinateur_cree", status_code=303)
     except HTTPException as exc:
         detail = exc.detail if isinstance(exc.detail, str) else "erreur_creation_ordinateur"
-        erreurs_connues = {
-            "nom_existant",
-            "numero_serie_existant",
-        }
+        erreurs_connues = {"nom_existant", "numero_serie_existant"}
         erreur = detail if detail in erreurs_connues else "erreur_creation_ordinateur"
         return RedirectResponse(url=f"/admin/ordinateurs?erreur={erreur}", status_code=303)
 
@@ -132,7 +142,6 @@ def page_modifier_ordinateur(
     message: str | None = None,
     erreur: str | None = None,
 ):
-    """Formulaire de modification."""
     redirection = verifier_admin_web(request)
     if redirection:
         return redirection
@@ -156,7 +165,7 @@ def page_modifier_ordinateur(
 
 
 @router.post("/admin/ordinateurs/{ordinateur_id}/modifier")
-def modifier_ordinateur_admin(
+async def modifier_ordinateur_admin(
     request: Request,
     ordinateur_id: int,
     nom: str = Form(...),
@@ -171,9 +180,11 @@ def modifier_ordinateur_admin(
     capacite_stockage: str = Form(default=""),
     date_acquisition: str = Form(default=""),
     garantie: str = Form(default=""),
+    licence_nom: list[str] = Form(default=[]),
+    licence_expiration: list[str] = Form(default=[]),
+    facture: UploadFile | None = File(default=None),
     service: OrdinateurService = Depends(_obtenir_service),
 ):
-    """Met a jour les donnees maitres."""
     redirection = verifier_admin_web(request)
     if redirection:
         return redirection
@@ -193,7 +204,8 @@ def modifier_ordinateur_admin(
             date_acquisition=_parse_date(date_acquisition),
             garantie=garantie or None,
         )
-        service.modifier_admin(ordinateur_id, donnees)
+        licences = _parser_licences_formulaire(licence_nom, licence_expiration)
+        await service.modifier_avec_facture(ordinateur_id, donnees, facture, licences=licences)
         return RedirectResponse(
             url=f"/admin/ordinateurs/{ordinateur_id}/modifier?message=ordinateur_modifie",
             status_code=303,
@@ -204,10 +216,39 @@ def modifier_ordinateur_admin(
             "nom_existant",
             "numero_serie_existant",
             "ordinateur_introuvable",
+            "fichier_invalide",
+            "fichier_trop_volumineux",
         }
         erreur = detail if detail in erreurs_connues else "erreur_modification_ordinateur"
         return RedirectResponse(
             url=f"/admin/ordinateurs/{ordinateur_id}/modifier?erreur={erreur}",
+            status_code=303,
+        )
+
+
+@router.post("/admin/ordinateurs/{ordinateur_id}/statut")
+def modifier_statut_ordinateur_admin(
+    request: Request,
+    ordinateur_id: int,
+    statut: str = Form(...),
+    retour: str = Form(default=""),
+    service: OrdinateurService = Depends(_obtenir_service),
+):
+    redirection = verifier_admin_web(request)
+    if redirection:
+        return redirection
+
+    try:
+        service.modifier_statut(ordinateur_id, StatutOrdinateur(statut))
+        if retour == "liste":
+            return RedirectResponse(url="/ordinateurs?message=statut_ordinateur_modifie", status_code=303)
+        return RedirectResponse(
+            url=f"/admin/ordinateurs/{ordinateur_id}/modifier?message=statut_ordinateur_modifie",
+            status_code=303,
+        )
+    except (ValueError, HTTPException):
+        return RedirectResponse(
+            url=f"/admin/ordinateurs/{ordinateur_id}/modifier?erreur=erreur_modification_ordinateur",
             status_code=303,
         )
 
@@ -218,7 +259,6 @@ def supprimer_ordinateur_admin(
     ordinateur_id: int,
     service: OrdinateurService = Depends(_obtenir_service),
 ):
-    """Supprime un ordinateur."""
     redirection = verifier_admin_web(request)
     if redirection:
         return redirection

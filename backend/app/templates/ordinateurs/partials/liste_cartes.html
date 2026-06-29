@@ -10,28 +10,42 @@
 {% if ordinateurs %}
 <div class="grille-vehicules">
     {% for ordi in ordinateurs %}
+    {% set st = ordi.statut if ordi.statut is string else ordi.statut.value %}
     <article class="carte-vehicule carte-ordinateur">
         <div class="carte-vehicule-entete">
             <div class="carte-vehicule-entete-titre">
                 <h3>{{ ordi.nom }}</h3>
+                {% if est_admin %}
                 <a href="/ordinateurs/{{ ordi.id }}/historique" class="btn-historique" title="{{ t.voir_historique }}">
                     {{ t.historique }}
                 </a>
+                {% endif %}
             </div>
             <div class="carte-vehicule-entete-statut">
-                {% set st = ordi.statut if ordi.statut is string else ordi.statut.value %}
-                {% if st == 'ok' %}
-                {% with variante='libre', libelle=t.statut_ok %}
-                {% include "partials/badge_statut.html" %}
-                {% endwith %}
-                {% elif st == 'en_panne' %}
-                {% with variante='occupe', libelle=t.statut_en_panne %}
-                {% include "partials/badge_statut.html" %}
-                {% endwith %}
+                {% if est_admin %}
+                <button
+                    type="button"
+                    class="badge-statut badge-statut-cliquable {% if st == 'ok' %}badge-libre{% elif st == 'en_panne' %}badge-occupe{% else %}badge-maintenance{% endif %}"
+                    onclick="ouvrirModalStatutOrdinateurListe('{{ ordi.id }}', '{{ ordi.nom | e }}')"
+                >
+                    {% if st == 'ok' %}{{ t.statut_ok }}
+                    {% elif st == 'en_panne' %}{{ t.statut_en_panne }}
+                    {% else %}{{ t.statut_maintenance }}{% endif %}
+                </button>
                 {% else %}
-                {% with variante='maintenance', libelle=t.statut_maintenance %}
-                {% include "partials/badge_statut.html" %}
-                {% endwith %}
+                    {% if st == 'ok' %}
+                    {% with variante='libre', libelle=t.statut_ok %}
+                    {% include "partials/badge_statut.html" %}
+                    {% endwith %}
+                    {% elif st == 'en_panne' %}
+                    {% with variante='occupe', libelle=t.statut_en_panne %}
+                    {% include "partials/badge_statut.html" %}
+                    {% endwith %}
+                    {% else %}
+                    {% with variante='maintenance', libelle=t.statut_maintenance %}
+                    {% include "partials/badge_statut.html" %}
+                    {% endwith %}
+                    {% endif %}
                 {% endif %}
             </div>
         </div>
@@ -41,36 +55,80 @@
                 <span class="champ-label">{{ t.marque }}</span>
                 <span class="champ-valeur">{{ ordi.marque }} {{ ordi.modele }}</span>
             </div>
+            {% if ordi.utilisateur_assigne %}
             <div class="champ-info">
-                <span class="champ-label">{{ t.numero_serie }}</span>
-                <span class="champ-valeur">{{ ordi.numero_serie or '-' }}</span>
-            </div>
-            <div class="champ-info champ-info-principal">
                 <span class="champ-label">{{ t.utilisateur_assigne }}</span>
-                <span class="champ-valeur">{{ ordi.utilisateur_assigne or t.non_assigne }}</span>
+                <span class="champ-valeur">{{ ordi.utilisateur_assigne }}</span>
             </div>
+            {% endif %}
+            {% if ordi.licences %}
+            <details class="details-licences-minimal">
+                <summary class="details-licences-minimal-summary">{{ t.licencias }}</summary>
+                <div class="details-licences-minimal-contenu">
+                    {% for lic in ordi.licences %}
+                    <div class="licence-ligne-minimal">
+                        <span class="licence-nom">{{ lic.nom }}</span>
+                        {% if lic.expiration %}
+                        <span class="licence-expiration">
+                            {%- if lic.expiration|length >= 10 and '-' in lic.expiration -%}
+                            {{ lic.expiration[8:10] }}/{{ lic.expiration[5:7] }}/{{ lic.expiration[2:4] }}
+                            {%- else -%}
+                            {{ lic.expiration }}
+                            {%- endif -%}
+                        </span>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </details>
+            {% endif %}
+            {% if ordi.date_acquisition %}
             <div class="champ-info">
-                <span class="champ-label">{{ t.localisation }}</span>
-                <span class="champ-valeur">{{ ordi.localisation }}</span>
+                <span class="champ-label">{{ t.fecha_compra }}</span>
+                <span class="champ-valeur">{{ ordi.date_acquisition.strftime('%d/%m/%Y') }}</span>
             </div>
+            {% endif %}
+            {% if ordi.facture_url %}
             <div class="champ-info">
-                <span class="champ-label">{{ t.systeme_exploitation }}</span>
-                <span class="champ-valeur">{{ ordi.systeme_exploitation or '-' }}</span>
+                <span class="champ-label">{{ t.facture_label }}</span>
+                <span class="champ-valeur">
+                    <a href="{{ ordi.facture_url }}" class="lien-facture" target="_blank" rel="noopener noreferrer">{{ t.voir_facture }}</a>
+                </span>
             </div>
-            <div class="champ-info">
-                <span class="champ-label">{{ t.processeur }}</span>
-                <span class="champ-valeur">{{ ordi.processeur or '-' }}</span>
-            </div>
-            <div class="champ-info">
-                <span class="champ-label">{{ t.memoire_ram }}</span>
-                <span class="champ-valeur">{{ ordi.memoire_ram or '-' }}</span>
-            </div>
-            <div class="champ-info">
-                <span class="champ-label">{{ t.capacite_stockage }}</span>
-                <span class="champ-valeur">{{ ordi.capacite_stockage or '-' }}</span>
-            </div>
+            {% endif %}
+
+            <details class="carte-vehicule-details">
+                <summary class="carte-vehicule-details-summary">{{ t.detalles_tecnicos }}</summary>
+                <div class="carte-vehicule-details-contenu">
+                <div class="champ-info">
+                    <span class="champ-label">{{ t.numero_serie }}</span>
+                    <span class="champ-valeur">{{ ordi.numero_serie or '—' }}</span>
+                </div>
+                <div class="champ-info">
+                    <span class="champ-label">{{ t.processeur }}</span>
+                    <span class="champ-valeur">{{ ordi.processeur or '—' }}</span>
+                </div>
+                <div class="champ-info">
+                    <span class="champ-label">{{ t.memoire_ram }}</span>
+                    <span class="champ-valeur">{{ ordi.memoire_ram or '—' }}</span>
+                </div>
+                <div class="champ-info">
+                    <span class="champ-label">{{ t.capacite_stockage }}</span>
+                    <span class="champ-valeur">{{ ordi.capacite_stockage or '—' }}</span>
+                </div>
+                <div class="champ-info">
+                    <span class="champ-label">{{ t.systeme_exploitation }}</span>
+                    <span class="champ-valeur">{{ ordi.systeme_exploitation or '—' }}</span>
+                </div>
+                <div class="champ-info">
+                    <span class="champ-label">{{ t.garantie }}</span>
+                    <span class="champ-valeur">{{ ordi.garantie or '—' }}</span>
+                </div>
+                </div>
+            </details>
         </div>
 
+        {% if est_admin %}
         <div class="carte-vehicule-actions">
             <button
                 type="button"
@@ -82,6 +140,7 @@
                 {{ t.enregistrer_evenement }}
             </button>
         </div>
+        {% endif %}
     </article>
     {% endfor %}
 </div>
