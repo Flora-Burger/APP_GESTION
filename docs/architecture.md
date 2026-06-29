@@ -24,6 +24,8 @@ Application modulaire de gestion des ressources materielles de l'entreprise.
 
 Voir [authentification.md](authentification.md) pour le systeme de comptes.
 
+Pour integrer ce projet comme module dans une autre application FastAPI, voir [integration-module/](integration-module/README.md).
+
 ## Structure des dossiers
 
 ```
